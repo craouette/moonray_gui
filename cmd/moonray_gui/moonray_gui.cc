@@ -9,6 +9,7 @@
 
 #include <moonray/application/ChangeWatcher.h>
 #include <moonray/application/RaasApplication.h>
+#include <moonray/rendering/rndr/PathVisualizerManager.h>
 #include <scene_rdl2/common/platform/Platform.h>
 #include <scene_rdl2/render/util/Args.h>
 #include <scene_rdl2/render/util/Strings.h>
@@ -306,7 +307,7 @@ RaasGuiApplication::startRenderThread(void* me)
                 // Execute startFrame() if renderContext has forceCallStartFrame condition
                 renderContext->forceGuiCallStartFrameIfNeed();
 
-                if (deltasWatcher->hasChanged(&changedDeltaFiles)) {
+                if (deltasWatcher->hasChanged(&changedDeltaFiles) || self->mRenderGui->pathVisualizerAttached()) {
                     currCameraXform = self->mRenderGui->endInteractiveRendering();
 
                     // Apply the deltas to the scene objects
@@ -314,7 +315,7 @@ RaasGuiApplication::startRenderThread(void* me)
                         renderContext->updateScene(filename);
                     }
                     changedDeltaFiles.clear();
-
+                    self->mRenderGui->resetPathVisualizerAttached();
                     // Tolerate a double to float precision loss in the gui
                     rdlaCameraXform = toFloat(camera->get(rdl2::Node::sNodeXformKey));
 
@@ -360,12 +361,19 @@ RaasGuiApplication::startRenderThread(void* me)
                         self->printStatusLine(*renderContext, renderContext->getLastFrameMcrtStartTime(), frameComplete);
                         renderContext->stopFrame();
 
+                        if (!renderContext->getPathVisualizerManager()->isPathVisualizerOn()) {
+                            /// Hide "Recording" overlay that signals that the Path Visualizer is
+                            /// gathering data
+                            self->mRenderGui->hideRecordingOverlay();
+                        }
+
                         // If we're in realtime mode then all rendering should have stopped by this
                         // point, so use all threads for the snapshot.
                         bool parallel = renderContext->getRenderMode() == moonray::rndr::RenderMode::REALTIME;
                         self->mRenderGui->snapshotFrame(&outputBuffer, &heatMapBuffer, &weightBuffer, &renderBufferOdd,
                                                         &renderOutputBuffer,
                                                         true, parallel);
+                        renderContext->getPathVisualizerManager()->draw(&outputBuffer);
                         self->mRenderGui->updateFrame(&outputBuffer, &renderOutputBuffer,
                                                       false, parallel);
                     }
@@ -384,6 +392,7 @@ RaasGuiApplication::startRenderThread(void* me)
                         // render buffer might not have been snapshot at all if
                         // displaying alternate render outputs
                         renderContext->snapshotRenderBuffer(&outputBuffer, true, true, true);
+                        renderContext->getPathVisualizerManager()->draw(&outputBuffer);
 
                         const std::string outputFilename = renderContext->getSceneContext().getSceneVariables().get(rdl2::SceneVariables::sOutputFile);
                         const rdl2::SceneObject *metadata = renderContext->getSceneContext().getSceneVariables().getExrHeaderAttributes();
@@ -416,6 +425,10 @@ RaasGuiApplication::startRenderThread(void* me)
 
                     // Grab most recent camera transform.
                     currCameraXform = self->mRenderGui->endInteractiveRendering();
+
+                    /// If the scene changes, we've stopped recording data for the 
+                    /// path visualizer. Remove the "Recording" overlay. 
+                    self->mRenderGui->hideRecordingOverlay();
 
                     // Get out of this loop to pick up changes.
                     std::cout << "Scene change detected." << std::endl;

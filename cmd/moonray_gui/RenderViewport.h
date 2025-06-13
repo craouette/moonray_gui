@@ -10,15 +10,20 @@
 #include "GlslBuffer.h"
 #include "GuiTypes.h"
 #include "OrbitCam.h"
+#include "RenderGui.h"
 
 #include <mcrt_denoise/denoiser/Denoiser.h>
 #endif
 
 #include <QWidget>
+#include <QSpinBox>
+#include <QCheckBox>
 
 class QLabel;
 
 namespace moonray_gui {
+
+class PathVisualizerGui;
 
 /**
  * The RenderViewport class will just display a frame buffer.
@@ -70,8 +75,30 @@ public:
     // Get status string
     QString getSettings() const { return "Exposure: " + QString::number(mExposure) + 
                                          "\nGamma: " + QString::number(mGamma); }
+
+    void setRenderGui(RenderGui* renderGui) { mRenderGui = renderGui; }
     
     static const char* mHelp;
+
+    void forceFrameRedraw();
+public slots:
+    void slot_processPixelXValue(int i);
+    void slot_processPixelYValue(int i);
+    void slot_processMaxDepth(int i);
+    void slot_processOcclusionRayFlag(int state);
+    void slot_processSpecularRayFlag(int state);
+    void slot_processDiffuseRayFlag(int state);
+    void slot_processBsdfSampleFlag(int state);
+    void slot_processLightSampleFlag(int state);
+    void slot_setLineWidth(int value);
+    void slot_setBsdfSampleColor(float r, float g, float b);
+    void slot_setLightSampleColor(float r, float g, float b);
+    void slot_setCameraRayColor(float r, float g, float b);
+    void slot_setDiffuseRayColor(float r, float g, float b);
+    void slot_setSpecularRayColor(float r, float g, float b);
+    void slot_attachPathVisualizer();
+    void slot_hideRecordingOverlay();
+    void slot_processProgressiveDraw(int state);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
@@ -83,7 +110,12 @@ protected:
 private:
     void setupUi();
 
+    RenderGui* mRenderGui;
+    moonray_gui::PathVisualizerGui* mPathVisualizerGui;
+
     QLabel* mImageLabel;
+    QLabel* mImageOverlay;
+    QLabel* mRecordingText;
 
     // OpenGL CRT
     GlslBuffer *mGlslBuffer;

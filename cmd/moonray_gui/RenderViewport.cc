@@ -3,8 +3,11 @@
 
 
 #include "RenderViewport.h"
+#include "RenderGui.h"
+#include "PathVisualizerGui.h"
 #include <moonray/rendering/rndr/rndr.h>
 #include <moonray/rendering/rndr/RenderOutputDriver.h>
+#include <moonray/rendering/rndr/PathVisualizerManager.h>
 
 #include <scene_rdl2/common/platform/Platform.h>
 #include <scene_rdl2/render/logging/logging.h>
@@ -19,7 +22,8 @@
 #include <QtGui>
 #include <QInputDialog>
 #include <QLabel>
-#include <QVBoxLayout>
+#include <QGridLayout>
+#include <QGraphicsDropShadowEffect>
 
 #include <algorithm>
 #include <ctime>
@@ -28,6 +32,8 @@
 
 using namespace moonray;
 using namespace scene_rdl2::logging;
+
+namespace moonray { namespace pbr { class PathVisualizer; }}
 
 namespace moonray_gui {
 
@@ -102,6 +108,7 @@ F: refocus on point under mouse cursor)";
 
 RenderViewport::RenderViewport(QWidget* parent, CameraType intialType, const char *crtOverride, const std::string& snapPath) :
     QWidget(parent),
+    mRenderGui(nullptr),
     mImageLabel(nullptr),
     mGlslBuffer(nullptr),
     mWidth(-1),
@@ -211,9 +218,34 @@ RenderViewport::setupUi()
 {
     mImageLabel = new QLabel;
 
-    QVBoxLayout* layout = new QVBoxLayout;
+    QGridLayout* layout = new QGridLayout;
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(mImageLabel);
+    layout->addWidget(mImageLabel, 0, 0, 10, 1);
+
+    // Create path visualizer gui and hide by default
+    mPathVisualizerGui = new moonray_gui::PathVisualizerGui(this); 
+    layout->addWidget(mPathVisualizerGui, 0, 1, 1, 1);
+    mPathVisualizerGui->hide();
+
+    // Create image overlay for path visualizer "recording" and hide for now
+    mImageOverlay = new QLabel;
+    mImageOverlay->setText("⬤ RECORDING...");
+    mImageOverlay->setAlignment(Qt::AlignBottom | Qt::AlignRight);
+    mImageOverlay->setStyleSheet("QLabel { background-color: rgba(147, 147, 147, 10%);  \
+                                           color: #de454f;                              \
+                                           padding: 20px;                               \
+                                           font: bold;                                  \
+                                           font-size: 20px;                             \
+                                          }");
+    connect(this->parentWidget(), SIGNAL(sig_hideRecordingOverlay()), this, SLOT(slot_hideRecordingOverlay()));
+
+    auto effect = new QGraphicsDropShadowEffect;
+    effect->setOffset(0, 0);
+    effect->setColor(Qt::black);
+    effect->setBlurRadius(10);
+    mImageOverlay->setGraphicsEffect(effect);
+    mImageOverlay->hide();
+    layout->addWidget(mImageOverlay, 0, 0, 10, 1);
 
     setLayout(layout);
 
@@ -299,6 +331,7 @@ RenderViewport::updateFrame(FrameUpdateEvent* event)
     // Resize the widget if the viewport changed.
     if (width != mWidth || height != mHeight) {
         mImageLabel->resize(width, height);
+        mImageOverlay->resize(width, height);
         mWidth = width;
         mHeight = height;
     }
@@ -357,6 +390,14 @@ RenderViewport::keyPressEvent(QKeyEvent *event)
 
             mNeedsRefresh = true;
             return;
+        }
+
+        if (event->key() == Qt::Key_V) {
+            if (mPathVisualizerGui->isVisible()) {
+                mPathVisualizerGui->hide();
+            } else {
+                mPathVisualizerGui->show();
+            }
         }
 
         // toggle de(N)oising
@@ -804,5 +845,153 @@ RenderViewport::mouseMoveEvent(QMouseEvent *event)
         QWidget::mouseMoveEvent(event);
     }
 }
+
+void RenderViewport::forceFrameRedraw()
+{
+    scene_rdl2::fb_util::RenderBuffer        outputBuffer;
+    scene_rdl2::fb_util::HeatMapBuffer       heatMapBuffer;
+    scene_rdl2::fb_util::FloatBuffer         weightBuffer;
+    scene_rdl2::fb_util::RenderBuffer        renderBufferOdd;
+    scene_rdl2::fb_util::VariablePixelBuffer renderOutputBuffer;
+
+    mRenderGui->snapshotFrame(&outputBuffer, &heatMapBuffer, &weightBuffer, &renderBufferOdd,
+                              &renderOutputBuffer, true, false);
+    mRenderContext->getPathVisualizerManager()->draw(&outputBuffer);
+    mRenderGui->updateFrame(&outputBuffer, &renderOutputBuffer, false, false);
+}
+
+void
+RenderViewport::slot_processPixelXValue(int i)
+{
+    mRenderContext->getPathVisualizerManager()->setPixelX(i);
+    forceFrameRedraw();
+}
+
+void
+RenderViewport::slot_processPixelYValue(int i)
+{
+    mRenderContext->getPathVisualizerManager()->setPixelY(i);
+    forceFrameRedraw();
+}
+
+void
+RenderViewport::slot_processMaxDepth(int i)
+{
+    mRenderContext->getPathVisualizerManager()->setMaxDepth(i);
+    forceFrameRedraw();
+}
+
+void
+RenderViewport::slot_processOcclusionRayFlag(int state)
+{
+    if (state == 0) {
+        mRenderContext->getPathVisualizerManager()->setOcclusionRaysFlag(false);
+    } else {
+        mRenderContext->getPathVisualizerManager()->setOcclusionRaysFlag(true);
+    }
+    forceFrameRedraw();
+}
+
+void
+RenderViewport::slot_processSpecularRayFlag(int state)
+{
+    if (state == 0) {
+        mRenderContext->getPathVisualizerManager()->setSpecularRaysFlag(false);
+    } else {
+        mRenderContext->getPathVisualizerManager()->setSpecularRaysFlag(true);
+    }
+    forceFrameRedraw();
+}
+
+void
+RenderViewport::slot_processDiffuseRayFlag(int state)
+{
+    if (state == 0) {
+        mRenderContext->getPathVisualizerManager()->setDiffuseRaysFlag(false);
+    } else {
+        mRenderContext->getPathVisualizerManager()->setDiffuseRaysFlag(true);
+    }
+    forceFrameRedraw();
+}
+
+void
+RenderViewport::slot_processBsdfSampleFlag(int state)
+{
+    if (state == 0) {
+        mRenderContext->getPathVisualizerManager()->setBsdfSamplesFlag(false);
+    } else {
+        mRenderContext->getPathVisualizerManager()->setBsdfSamplesFlag(true);
+    }
+    forceFrameRedraw();
+}
+
+void
+RenderViewport::slot_processLightSampleFlag(int state)
+{
+    if (state == 0) {
+        mRenderContext->getPathVisualizerManager()->setLightSamplesFlag(false);
+    } else {
+        mRenderContext->getPathVisualizerManager()->setLightSamplesFlag(true);
+    }
+    forceFrameRedraw();
+}
+
+void
+RenderViewport::slot_attachPathVisualizer()
+{
+    mRenderContext->getPathVisualizerManager()->trigger();
+    mRenderGui->setPathVisualizerAttached();
+    mImageOverlay->show();
+}
+
+void
+RenderViewport::slot_setLineWidth(int value)
+{
+    mRenderContext->getPathVisualizerManager()->setLineWidth(value);
+    forceFrameRedraw();
+}
+
+void RenderViewport::slot_setBsdfSampleColor(float r, float g, float b) 
+{ 
+    mRenderContext->getPathVisualizerManager()->setBsdfSampleColor(scene_rdl2::math::Color(r / 255.f, g / 255.f, b / 255.f)); 
+    forceFrameRedraw(); 
+}
+
+void RenderViewport::slot_setLightSampleColor(float r, float g, float b) 
+{ 
+    mRenderContext->getPathVisualizerManager()->setLightSampleColor(scene_rdl2::math::Color(r / 255.f, g / 255.f, b / 255.f)); 
+    forceFrameRedraw(); 
+}
+
+void RenderViewport::slot_setCameraRayColor(float r, float g, float b) 
+{ 
+    mRenderContext->getPathVisualizerManager()->setCameraRayColor(scene_rdl2::math::Color(r / 255.f, g / 255.f, b / 255.f)); 
+    forceFrameRedraw(); 
+}
+
+void RenderViewport::slot_setDiffuseRayColor(float r, float g, float b) 
+{ 
+    mRenderContext->getPathVisualizerManager()->setDiffuseRayColor(scene_rdl2::math::Color(r / 255.f, g / 255.f, b / 255.f)); 
+    forceFrameRedraw(); 
+}
+
+void RenderViewport::slot_setSpecularRayColor(float r, float g, float b) 
+{ 
+    mRenderContext->getPathVisualizerManager()->setSpecularRayColor(scene_rdl2::math::Color(r / 255.f, g / 255.f, b / 255.f)); 
+    forceFrameRedraw(); 
+}
+
+void
+RenderViewport::slot_processProgressiveDraw(int state)
+{
+    if (state == 0) {
+        mRenderGui->setProgressiveDraw(false);
+    } else {
+        mRenderGui->setProgressiveDraw(true);
+    }
+}
+
+void RenderViewport::slot_hideRecordingOverlay() { mImageOverlay->hide(); }
+
 } // namespace moonray_gui
 

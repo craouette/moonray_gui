@@ -77,6 +77,13 @@ public:
 
     bool close();
 
+    bool pathVisualizerAttached() const { return mPathVisualizerAttached; }
+    void setPathVisualizerAttached() { mPathVisualizerAttached = true; }
+    void resetPathVisualizerAttached() { mPathVisualizerAttached = false; }
+    void hideRecordingOverlay() { mMainWindow->hideRecordingOverlay(); }
+
+    void setProgressiveDraw(bool state) { mPathVisualizerProgressiveDraw = state; }
+
 private:
     uint32_t updateProgressiveRendering();
     uint32_t updateRealTimeRendering();
@@ -100,6 +107,9 @@ private:
     CameraType mInitialCameraType;
 
     MainWindow* mMainWindow;
+
+    bool mPathVisualizerAttached;
+    bool mPathVisualizerProgressiveDraw;
 
     moonray::rndr::RenderContext         *mRenderContext = nullptr;
     scene_rdl2::fb_util::RenderBuffer        mRenderBuffer;

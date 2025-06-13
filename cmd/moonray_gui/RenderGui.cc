@@ -10,6 +10,7 @@
 #include <moonray/rendering/rndr/RenderOutputDriver.h>
 #include <moonray/rendering/rndr/RenderStatistics.h>
 #include <moonray/rendering/rndr/RenderContextConsoleDriver.h>
+#include <moonray/rendering/rndr/PathVisualizerManager.h>
 #include <scene_rdl2/common/fb_util/PixelBufferUtilsGamma8bit.h>
 #include <scene_rdl2/common/math/MathUtil.h>
 #include <scene_rdl2/common/platform/Platform.h>
@@ -232,10 +233,14 @@ RenderGui::RenderGui(CameraType initialCamType,
     mHandler->connect(QApplication::instance(), SIGNAL(lastWindowClosed()), mHandler, SLOT(quitApp()));
     mMainWindow->getRenderViewport()->setShowTileProgress(showTileProgress);
     mMainWindow->getRenderViewport()->setApplyColorRenderTransform(applyCrt);
+    mMainWindow->getRenderViewport()->setRenderGui(this);
     mMainWindow->show();
     mHandler->mIsActive = true;
     mMasterTimestamp = 1;
     mColorManager.setupConfig();
+
+    mPathVisualizerAttached = false;
+    mPathVisualizerProgressiveDraw = true;
 
     mShmFbOutput = std::make_shared<scene_rdl2::grid_util::ShmFbOutput>();
     moonray::rndr::RenderContextConsoleDriver::setShmFbOutput(mShmFbOutput);
@@ -445,6 +450,11 @@ RenderGui::snapshotFrame(scene_rdl2::fb_util::RenderBuffer *renderBuffer,
     if (mRenderOutput < 0) {
         // snapshot the plain old render buffer output
         mRenderContext->snapshotRenderBuffer(renderBuffer, untile, parallel, true);
+
+        // Draw visualization rays
+        if (mPathVisualizerProgressiveDraw || mRenderContext->isFrameComplete()) {
+            mRenderContext->getPathVisualizerManager()->draw(renderBuffer);
+        }
         return;
     }
 
@@ -480,6 +490,10 @@ RenderGui::snapshotFrame(scene_rdl2::fb_util::RenderBuffer *renderBuffer,
     mRenderContext->snapshotRenderOutput(renderOutputBuffer, mRenderOutput,
                                          renderBuffer, &beautyBuffer, heatMapBuffer, weightBuffer, renderBufferOdd,
                                          untile, parallel);
+    // Draw visualization rays
+    if (mPathVisualizerProgressiveDraw || mRenderContext->isFrameComplete()) {
+        mRenderContext->getPathVisualizerManager()->draw(renderBuffer);
+    }
 }
 
 void
@@ -586,8 +600,7 @@ RenderGui::updateProgressiveRendering()
             mLastFilmActivity = filmActivity;
 
             snapshotFrame(&mRenderBuffer, &mHeatMapBuffer, &mWeightBuffer, &mRenderBufferOdd,
-                          &mRenderOutputBuffer, true, false);
-
+                          &mRenderOutputBuffer, true, false);         
             updateFrame(&mRenderBuffer, &mRenderOutputBuffer,
                         !mRenderContext->isFrameComplete() &&
                         renderVp->getShowTileProgress(),

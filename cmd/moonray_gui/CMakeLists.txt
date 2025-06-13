@@ -47,12 +47,14 @@ endforeach()
 target_sources(${target}
     PRIVATE
         ColorManager.cc
+        ColorPicker.cc
         FrameUpdateEvent.cc
         FreeCam.cc
         GlslBuffer.cc
         MainWindow.cc
         moonray_gui.cc
         OrbitCam.cc
+        PathVisualizerGui.cc
         RenderGui.cc
         RenderViewport.cc
         ${crtObjs}
