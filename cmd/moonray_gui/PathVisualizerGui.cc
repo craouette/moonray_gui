@@ -16,7 +16,7 @@
 namespace moonray_gui {
 
 PathVisualizerGui::PathVisualizerGui(QWidget* parent) :
-    QWidget(parent), mRenderViewport(parent), mCurrentRow(0)
+    QWidget(parent), mRenderViewport(static_cast<RenderViewport*>(parent)), mCurrentRow(0)
 {
     // Set up the layout
     QGridLayout* layout = new QGridLayout;
