@@ -8,10 +8,12 @@
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QGridLayout>
+#include <QFile>
 #include <QLabel>
 #include <QPushButton>
 #include <QSlider>
 #include <QSpinBox>
+#include <QTextStream>
 
 namespace moonray_gui {
 
@@ -24,18 +26,25 @@ PathVisualizerGui::PathVisualizerGui(QWidget* parent) :
     
     // Set up the title
     QLabel* title = new QLabel("Path Visualizer", this);
-    title->setStyleSheet("QLabel { font-size: 25px; border-bottom: 1px solid white; }");
+    title->setStyleSheet("QLabel { font-size: 25px; border-bottom: 1px solid white; margin-bottom:5px; }");
     layout->addWidget(title, mCurrentRow++, 0, 1, 2);
 
     // Setup the rest of the path visualizer GUI
-    setupRecordBtn(layout);
     setupPixelUI(layout);
+    setupSamplingUI(layout);
     setupDepthUI(layout);
     setupVisibilityUI(layout);
+    setupRecordBtn(layout);
     setupStyleUI(layout);
 
-    // Set up style for the whole UI
-    this->setStyleSheet("QWidget { color: white; padding: 4px; margin: 1px; }");
+    // Setup stylesheet
+    QFile styleFile(":/PathVisualizerGui.qss");
+
+    if (styleFile.open(QFile::ReadOnly | QFile::Text)) {
+        QTextStream ts(&styleFile);
+        QString styleSheet = ts.readAll();
+        this->setStyleSheet(styleSheet);
+    }
 
     // Set the layout for this widget
     setLayout(layout);
@@ -45,25 +54,18 @@ PathVisualizerGui::~PathVisualizerGui() {}
 
 void PathVisualizerGui::setupRecordBtn(QGridLayout* layout)
 {
-    QPushButton* recordBtn = new QPushButton("Record Ray Data", this);
+    QPushButton* recordBtn = new QPushButton("Draw", this);
+    recordBtn->setProperty("class", "button");
     connect(recordBtn, SIGNAL(clicked()), mRenderViewport, SLOT(slot_attachPathVisualizer()));
 
-    recordBtn->setStyleSheet("QPushButton { background-color: #b8d3ff; color: black; border-radius: 5px; margin: 10px; } \
-                              QPushButton:hover { background-color: #98b9ed; }");
     recordBtn->setCursor(Qt::PointingHandCursor);
 
-    QCheckBox* progressiveDrawToggle = new QCheckBox("Draw rays progressively", this);
-    progressiveDrawToggle->setCheckState(Qt::Checked);
-    /// NOTE: stateChanged will be deprecated starting with Qt v6.9
-    connect(progressiveDrawToggle, SIGNAL(stateChanged(int)), mRenderViewport, SLOT(slot_processProgressiveDraw(int)));
-
-    layout->addWidget(recordBtn, mCurrentRow++, 0, 1, 1);
-    layout->addWidget(progressiveDrawToggle, mCurrentRow++, 0, 1, 1);
+    layout->addWidget(recordBtn, mCurrentRow++, 0, 1, 3);
 }
 
 void PathVisualizerGui::setupPixelUI(QGridLayout* layout)
 {
-    QLabel* pixelTitle = new QLabel("Pixel", this);
+    QLabel* pixelTitle = new QLabel("Pixel: ", this);
     QSpinBox* pixelX = new QSpinBox(this);
     QSpinBox* pixelY = new QSpinBox(this);
     pixelX->setRange(0, 10000);
@@ -80,32 +82,71 @@ void PathVisualizerGui::setupPixelUI(QGridLayout* layout)
     connect(pixelX, SIGNAL(valueChanged(int)), mRenderViewport, SLOT(slot_processPixelXValue(int)));
     connect(pixelY, SIGNAL(valueChanged(int)), mRenderViewport, SLOT(slot_processPixelYValue(int)));
 
-    /// TODO: create style sheet
-    pixelTitle->setStyleSheet("QLabel { background-color: #383838; font: bold 15px; }");
+    layout->addWidget(pixelTitle, mCurrentRow, 0, 1, 1);
+    layout->addWidget(pixelX, mCurrentRow, 1, 1, 1);
+    layout->addWidget(pixelY, mCurrentRow++, 2, 1, 1);
+}
 
-    layout->addWidget(pixelTitle, mCurrentRow++, 0, 1, 2);
-    layout->addWidget(pixelX, mCurrentRow, 0, 1, 1);
-    layout->addWidget(pixelY, mCurrentRow++, 1, 1, 1);
+void PathVisualizerGui::setupSamplingUI(QGridLayout* layout)
+{
+    QLabel* samplingTitle = new QLabel("Sampling Settings", this);
+    samplingTitle->setProperty("class", "header");
+
+    QCheckBox* useSceneSamples = new QCheckBox("Use Scene Sampling Settings", this);
+    useSceneSamples->setCheckState(Qt::Checked);
+
+    QLabel* pixelSamplesTitle = new QLabel("Pixel Samples:", this);
+    QLabel* lightSamplesTitle = new QLabel("Light Samples:", this);
+    QLabel* bsdfSamplesTitle = new QLabel("Bsdf Samples:", this);
+    mPixelSamples = new QSpinBox(this);
+    mLightSamples = new QSpinBox(this);
+    mBsdfSamples = new QSpinBox(this);
+    mPixelSamples->setRange(0, 32);
+    mLightSamples->setRange(0, 32);
+    mBsdfSamples->setRange(0, 32);
+    mPixelSamples->setValue(2);
+    mLightSamples->setValue(1);
+    mBsdfSamples->setValue(1);
+    mPixelSamples->setEnabled(false);
+    mLightSamples->setEnabled(false);
+    mBsdfSamples->setEnabled(false);
+
+    connect(useSceneSamples, SIGNAL(stateChanged(int)), mRenderViewport, SLOT(slot_processUseSceneSamples(int)));
+    connect(useSceneSamples, SIGNAL(stateChanged(int)), this, SLOT(slot_toggleSamplingSettings(int)));
+    connect(mPixelSamples, SIGNAL(valueChanged(int)), mRenderViewport, SLOT(slot_processPixelSamples(int)));
+    connect(mLightSamples, SIGNAL(valueChanged(int)), mRenderViewport, SLOT(slot_processLightSamples(int)));
+    connect(mBsdfSamples, SIGNAL(valueChanged(int)), mRenderViewport, SLOT(slot_processBsdfSamples(int)));
+
+    layout->addWidget(samplingTitle, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(useSceneSamples, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(pixelSamplesTitle, mCurrentRow, 0, 1, 2);
+    layout->addWidget(mPixelSamples, mCurrentRow++, 2, 1, 1);
+    layout->addWidget(lightSamplesTitle, mCurrentRow, 0, 1, 2);
+    layout->addWidget(mLightSamples, mCurrentRow++, 2, 1, 1);
+    layout->addWidget(bsdfSamplesTitle, mCurrentRow, 0, 1, 2);
+    layout->addWidget(mBsdfSamples, mCurrentRow++, 2, 1, 1);
 }
 
 void PathVisualizerGui::setupDepthUI(QGridLayout* layout)
 {
     QLabel* depthTitle = new QLabel("Max Depth", this);
+    depthTitle->setProperty("class", "header");
+
     QSpinBox* maxDepth = new QSpinBox(this);
     maxDepth->setValue(1);
-    maxDepth->setRange(0, 20);
+    maxDepth->setRange(0, 50);
     maxDepth->setKeyboardTracking(false);
     connect(maxDepth, SIGNAL(valueChanged(int)), mRenderViewport, SLOT(slot_processMaxDepth(int)));
 
-    depthTitle->setStyleSheet("QLabel { background-color: #383838; font: bold 15px; }");
-
-    layout->addWidget(depthTitle, mCurrentRow++, 0, 1, 2);
-    layout->addWidget(maxDepth, mCurrentRow++, 0, 1, 1);
+    layout->addWidget(depthTitle, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(maxDepth,   mCurrentRow++, 0, 1, 1);
 }
 
 void PathVisualizerGui::setupVisibilityUI(QGridLayout* layout)
 {
     QLabel* visibilityTitle = new QLabel("Visibility Toggles", this);
+    visibilityTitle->setProperty("class", "header");
+
     QCheckBox* occlusionRaysOn = new QCheckBox("Occlusion rays", this);
     QCheckBox* specularRaysOn = new QCheckBox("Specular rays", this);
     QCheckBox* diffuseRaysOn = new QCheckBox("Diffuse rays", this);
@@ -122,21 +163,19 @@ void PathVisualizerGui::setupVisibilityUI(QGridLayout* layout)
     connect(diffuseRaysOn,   SIGNAL(stateChanged(int)), mRenderViewport, SLOT(slot_processDiffuseRayFlag(int)));
     connect(bsdfSamplesOn,   SIGNAL(stateChanged(int)), mRenderViewport, SLOT(slot_processBsdfSampleFlag(int)));
     connect(lightSamplesOn,  SIGNAL(stateChanged(int)), mRenderViewport, SLOT(slot_processLightSampleFlag(int)));
-
-    visibilityTitle->setStyleSheet("QLabel { background-color: #383838; font: bold 15px; }");
     
-    layout->addWidget(visibilityTitle, mCurrentRow++, 0, 1, 2);
-    layout->addWidget(occlusionRaysOn, mCurrentRow++, 0, 1, 1);
-    layout->addWidget(specularRaysOn,  mCurrentRow++, 0, 1, 1);
-    layout->addWidget(diffuseRaysOn,   mCurrentRow++, 0, 1, 1);
-    layout->addWidget(bsdfSamplesOn,   mCurrentRow++, 0, 1, 1);
-    layout->addWidget(lightSamplesOn,  mCurrentRow++, 0, 1, 1);
+    layout->addWidget(visibilityTitle, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(occlusionRaysOn, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(specularRaysOn,  mCurrentRow++, 0, 1, 3);
+    layout->addWidget(diffuseRaysOn,   mCurrentRow++, 0, 1, 3);
+    layout->addWidget(bsdfSamplesOn,   mCurrentRow++, 0, 1, 3);
+    layout->addWidget(lightSamplesOn,  mCurrentRow++, 0, 1, 3);
 }
 
 void PathVisualizerGui::setupStyleUI(QGridLayout* layout)
 {
     QLabel* styleTitle = new QLabel("Style Options", this);
-    styleTitle->setStyleSheet("QLabel { background-color: #383838; font: bold 15px; }");
+    styleTitle->setProperty("class", "header");
 
     QLabel* lineWidthLabel = new QLabel("Line Width: ", this);
     QSlider* lineWidthSlider = new QSlider(this);
@@ -165,14 +204,23 @@ void PathVisualizerGui::setupStyleUI(QGridLayout* layout)
     connect(mCameraRayColorPicker, SIGNAL(sig_colorChanged(float, float, float)), 
             mRenderViewport, SLOT(slot_setCameraRayColor(float, float, float)));
     
-    layout->addWidget(styleTitle, mCurrentRow++, 0, 1, 2);
-    layout->addWidget(lineWidthLabel, mCurrentRow++, 0, 1, 2);
-    layout->addWidget(lineWidthSlider, mCurrentRow++, 0, 1, 2);
-    layout->addWidget(mDiffuseRayColorPicker, mCurrentRow++, 0, 1, 1);
-    layout->addWidget(mSpecularRayColorPicker, mCurrentRow++, 0, 1, 1);
-    layout->addWidget(mBsdfSampleColorPicker, mCurrentRow++, 0, 1, 1);
-    layout->addWidget(mLightSampleColorPicker, mCurrentRow++, 0, 1, 1);
-    layout->addWidget(mCameraRayColorPicker, mCurrentRow++, 0, 1, 1);
+    layout->addWidget(styleTitle, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(lineWidthLabel, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(lineWidthSlider, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(mDiffuseRayColorPicker, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(mSpecularRayColorPicker, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(mBsdfSampleColorPicker, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(mLightSampleColorPicker, mCurrentRow++, 0, 1, 3);
+    layout->addWidget(mCameraRayColorPicker, mCurrentRow++, 0, 1, 3);
+}
+
+void PathVisualizerGui::slot_toggleSamplingSettings(int useSceneSamples)
+{
+    bool enableSamplingSettings = !useSceneSamples;
+
+    mPixelSamples->setEnabled(enableSamplingSettings);
+    mLightSamples->setEnabled(enableSamplingSettings);
+    mBsdfSamples->setEnabled(enableSamplingSettings);
 }
 
 }

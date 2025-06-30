@@ -227,26 +227,6 @@ RenderViewport::setupUi()
     layout->addWidget(mPathVisualizerGui, 0, 1, 1, 1);
     mPathVisualizerGui->hide();
 
-    // Create image overlay for path visualizer "recording" and hide for now
-    mImageOverlay = new QLabel;
-    mImageOverlay->setText("⬤ RECORDING...");
-    mImageOverlay->setAlignment(Qt::AlignBottom | Qt::AlignRight);
-    mImageOverlay->setStyleSheet("QLabel { background-color: rgba(147, 147, 147, 10%);  \
-                                           color: #de454f;                              \
-                                           padding: 20px;                               \
-                                           font: bold;                                  \
-                                           font-size: 20px;                             \
-                                          }");
-    connect(this->parentWidget(), SIGNAL(sig_hideRecordingOverlay()), this, SLOT(slot_hideRecordingOverlay()));
-
-    auto effect = new QGraphicsDropShadowEffect;
-    effect->setOffset(0, 0);
-    effect->setColor(Qt::black);
-    effect->setBlurRadius(10);
-    mImageOverlay->setGraphicsEffect(effect);
-    mImageOverlay->hide();
-    layout->addWidget(mImageOverlay, 0, 0, 10, 1);
-
     setLayout(layout);
 
     mWidth = -1;
@@ -331,7 +311,6 @@ RenderViewport::updateFrame(FrameUpdateEvent* event)
     // Resize the widget if the viewport changed.
     if (width != mWidth || height != mHeight) {
         mImageLabel->resize(width, height);
-        mImageOverlay->resize(width, height);
         mWidth = width;
         mHeight = height;
     }
@@ -848,37 +827,28 @@ RenderViewport::mouseMoveEvent(QMouseEvent *event)
 
 void RenderViewport::forceFrameRedraw()
 {
-    scene_rdl2::fb_util::RenderBuffer        outputBuffer;
-    scene_rdl2::fb_util::HeatMapBuffer       heatMapBuffer;
-    scene_rdl2::fb_util::FloatBuffer         weightBuffer;
-    scene_rdl2::fb_util::RenderBuffer        renderBufferOdd;
-    scene_rdl2::fb_util::VariablePixelBuffer renderOutputBuffer;
-
-    mRenderGui->snapshotFrame(&outputBuffer, &heatMapBuffer, &weightBuffer, &renderBufferOdd,
-                              &renderOutputBuffer, true, false);
-    mRenderContext->getPathVisualizerManager()->draw(&outputBuffer);
-    mRenderGui->updateFrame(&outputBuffer, &renderOutputBuffer, false, false);
+    mRenderContext->getPathVisualizerManager()->requestDraw();
 }
 
 void
 RenderViewport::slot_processPixelXValue(int i)
 {
     mRenderContext->getPathVisualizerManager()->setPixelX(i);
-    forceFrameRedraw();
+    mRenderContext->getPathVisualizerManager()->startSimulation();
 }
 
 void
 RenderViewport::slot_processPixelYValue(int i)
 {
     mRenderContext->getPathVisualizerManager()->setPixelY(i);
-    forceFrameRedraw();
+    mRenderContext->getPathVisualizerManager()->startSimulation();
 }
 
 void
 RenderViewport::slot_processMaxDepth(int i)
 {
     mRenderContext->getPathVisualizerManager()->setMaxDepth(i);
-    forceFrameRedraw();
+    mRenderContext->getPathVisualizerManager()->startSimulation();
 }
 
 void
@@ -889,7 +859,7 @@ RenderViewport::slot_processOcclusionRayFlag(int state)
     } else {
         mRenderContext->getPathVisualizerManager()->setOcclusionRaysFlag(true);
     }
-    forceFrameRedraw();
+    mRenderContext->getPathVisualizerManager()->startSimulation();
 }
 
 void
@@ -900,7 +870,7 @@ RenderViewport::slot_processSpecularRayFlag(int state)
     } else {
         mRenderContext->getPathVisualizerManager()->setSpecularRaysFlag(true);
     }
-    forceFrameRedraw();
+    mRenderContext->getPathVisualizerManager()->startSimulation();
 }
 
 void
@@ -911,7 +881,7 @@ RenderViewport::slot_processDiffuseRayFlag(int state)
     } else {
         mRenderContext->getPathVisualizerManager()->setDiffuseRaysFlag(true);
     }
-    forceFrameRedraw();
+    mRenderContext->getPathVisualizerManager()->startSimulation();
 }
 
 void
@@ -922,7 +892,7 @@ RenderViewport::slot_processBsdfSampleFlag(int state)
     } else {
         mRenderContext->getPathVisualizerManager()->setBsdfSamplesFlag(true);
     }
-    forceFrameRedraw();
+    mRenderContext->getPathVisualizerManager()->startSimulation();
 }
 
 void
@@ -933,15 +903,13 @@ RenderViewport::slot_processLightSampleFlag(int state)
     } else {
         mRenderContext->getPathVisualizerManager()->setLightSamplesFlag(true);
     }
-    forceFrameRedraw();
+    mRenderContext->getPathVisualizerManager()->startSimulation();
 }
 
 void
 RenderViewport::slot_attachPathVisualizer()
 {
-    mRenderContext->getPathVisualizerManager()->trigger();
-    mRenderGui->setPathVisualizerAttached();
-    mImageOverlay->show();
+    mRenderContext->getPathVisualizerManager()->startSimulation();
 }
 
 void
@@ -953,45 +921,54 @@ RenderViewport::slot_setLineWidth(int value)
 
 void RenderViewport::slot_setBsdfSampleColor(float r, float g, float b) 
 { 
-    mRenderContext->getPathVisualizerManager()->setBsdfSampleColor(scene_rdl2::math::Color(r / 255.f, g / 255.f, b / 255.f)); 
+    mRenderContext->getPathVisualizerManager()->setBsdfSampleColor(scene_rdl2::math::Color(r / 255.0, g / 255.0, b / 255.0)); 
     forceFrameRedraw(); 
 }
 
 void RenderViewport::slot_setLightSampleColor(float r, float g, float b) 
 { 
-    mRenderContext->getPathVisualizerManager()->setLightSampleColor(scene_rdl2::math::Color(r / 255.f, g / 255.f, b / 255.f)); 
+    mRenderContext->getPathVisualizerManager()->setLightSampleColor(scene_rdl2::math::Color(r / 255.0, g / 255.0, b / 255.0)); 
     forceFrameRedraw(); 
 }
 
 void RenderViewport::slot_setCameraRayColor(float r, float g, float b) 
 { 
-    mRenderContext->getPathVisualizerManager()->setCameraRayColor(scene_rdl2::math::Color(r / 255.f, g / 255.f, b / 255.f)); 
+    mRenderContext->getPathVisualizerManager()->setCameraRayColor(scene_rdl2::math::Color(r / 255.0, g / 255.0, b / 255.0)); 
     forceFrameRedraw(); 
 }
 
 void RenderViewport::slot_setDiffuseRayColor(float r, float g, float b) 
 { 
-    mRenderContext->getPathVisualizerManager()->setDiffuseRayColor(scene_rdl2::math::Color(r / 255.f, g / 255.f, b / 255.f)); 
+    mRenderContext->getPathVisualizerManager()->setDiffuseRayColor(scene_rdl2::math::Color(r / 255.0, g / 255.0, b / 255.0)); 
     forceFrameRedraw(); 
 }
 
 void RenderViewport::slot_setSpecularRayColor(float r, float g, float b) 
 { 
-    mRenderContext->getPathVisualizerManager()->setSpecularRayColor(scene_rdl2::math::Color(r / 255.f, g / 255.f, b / 255.f)); 
+    mRenderContext->getPathVisualizerManager()->setSpecularRayColor(scene_rdl2::math::Color(r / 255.0, g / 255.0, b / 255.0)); 
     forceFrameRedraw(); 
 }
 
-void
-RenderViewport::slot_processProgressiveDraw(int state)
-{
-    if (state == 0) {
-        mRenderGui->setProgressiveDraw(false);
-    } else {
-        mRenderGui->setProgressiveDraw(true);
-    }
+void RenderViewport::slot_processUseSceneSamples(int useSceneSamples) 
+{ 
+    mRenderContext->getPathVisualizerManager()->setUseSceneSamples(useSceneSamples); 
+    mRenderContext->getPathVisualizerManager()->startSimulation();
 }
-
-void RenderViewport::slot_hideRecordingOverlay() { mImageOverlay->hide(); }
+void RenderViewport::slot_processPixelSamples(int samples) 
+{ 
+    mRenderContext->getPathVisualizerManager()->setPixelSamples(samples); 
+    mRenderContext->getPathVisualizerManager()->startSimulation();
+}
+void RenderViewport::slot_processLightSamples(int samples) 
+{ 
+    mRenderContext->getPathVisualizerManager()->setLightSamples(samples); 
+    mRenderContext->getPathVisualizerManager()->startSimulation();
+}
+void RenderViewport::slot_processBsdfSamples(int samples) 
+{ 
+    mRenderContext->getPathVisualizerManager()->setBsdfSamples(samples); 
+    mRenderContext->getPathVisualizerManager()->startSimulation();
+}
 
 } // namespace moonray_gui
 

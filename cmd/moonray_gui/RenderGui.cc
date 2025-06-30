@@ -439,6 +439,7 @@ RenderGui::snapshotFrame(scene_rdl2::fb_util::RenderBuffer *renderBuffer,
                          bool untile, bool parallel)
 {
     DebugMode mode = mMainWindow->getRenderViewport()->getDebugMode();
+    moonray::rndr::PathVisualizerManager* visualizer = mRenderContext->getPathVisualizerManager().get();
 
     // Special case if debug mode is set to NUM_SAMPLES, in which case we want to display
     // the weights buffer directly with some transform applied to aid visualization.
@@ -450,10 +451,8 @@ RenderGui::snapshotFrame(scene_rdl2::fb_util::RenderBuffer *renderBuffer,
     if (mRenderOutput < 0) {
         // snapshot the plain old render buffer output
         mRenderContext->snapshotRenderBuffer(renderBuffer, untile, parallel, true);
-
-        // Draw visualization rays
-        if (mPathVisualizerProgressiveDraw || mRenderContext->isFrameComplete()) {
-            mRenderContext->getPathVisualizerManager()->draw(renderBuffer);
+        if (visualizer->isInDrawState()) {
+            visualizer->draw(renderBuffer);
         }
         return;
     }
@@ -490,9 +489,8 @@ RenderGui::snapshotFrame(scene_rdl2::fb_util::RenderBuffer *renderBuffer,
     mRenderContext->snapshotRenderOutput(renderOutputBuffer, mRenderOutput,
                                          renderBuffer, &beautyBuffer, heatMapBuffer, weightBuffer, renderBufferOdd,
                                          untile, parallel);
-    // Draw visualization rays
-    if (mPathVisualizerProgressiveDraw || mRenderContext->isFrameComplete()) {
-        mRenderContext->getPathVisualizerManager()->draw(renderBuffer);
+    if (visualizer->isInDrawState()) {
+        visualizer->draw(renderBuffer);
     }
 }
 
@@ -569,6 +567,7 @@ RenderGui::updateProgressiveRendering()
 
     // RenderOutputDriver must exist to render a frame
     const auto *rod = mRenderContext->getRenderOutputDriver();
+    bool visualizerRefreshNeeded = false;
 
     // This block of code won't get executed on the first iteration after
     // beginInteractiveRendering is called but will be for all subsequent 
@@ -594,19 +593,23 @@ RenderGui::updateProgressiveRendering()
 
         // All these conditions must be met before we push another new frame up.
         if (readyForDisplay && ((snapshotIntervalElapsed && renderSamplesPending) || roChanged)) {
-
             mLastSnapshotTimestamp = mRenderTimestamp;
             mLastSnapshotTime = currentTime;
             mLastFilmActivity = filmActivity;
 
             snapshotFrame(&mRenderBuffer, &mHeatMapBuffer, &mWeightBuffer, &mRenderBufferOdd,
-                          &mRenderOutputBuffer, true, false);         
+                          &mRenderOutputBuffer, true, false);
             updateFrame(&mRenderBuffer, &mRenderOutputBuffer,
                         !mRenderContext->isFrameComplete() &&
                         renderVp->getShowTileProgress(),
                         false);
 
             updated = true;
+        }
+
+        if (mRenderContext->getPathVisualizerManager()->getNeedsRenderRefresh() && !mRenderContext->isFrameRendering()) {
+            mRenderContext->getPathVisualizerManager()->setNeedsRenderRefresh(false);
+            visualizerRefreshNeeded = true;
         }
 
     } 
@@ -631,7 +634,7 @@ RenderGui::updateProgressiveRendering()
         // Check if there have been any scene changes since the last render.
         Mat4f cameraXform = updateNavigationCam(currentTime);
         const bool cameraChanged = !math::isEqual(mLastCameraXform, cameraXform);
-        bool sceneChanged = cameraChanged || (mMasterTimestamp != mRenderTimestamp);
+        bool sceneChanged = cameraChanged || (mMasterTimestamp != mRenderTimestamp) || visualizerRefreshNeeded;
 
         // Check if the progressive mode changed
         moonray::rndr::RenderMode currentMode = renderVp->isFastProgressive() ?
@@ -654,6 +657,10 @@ RenderGui::updateProgressiveRendering()
             // Stop the previous frame (if we were rendering one).
             if (mRenderContext->isFrameRendering()) {
                 mRenderContext->stopFrame();
+
+                if (visualizerRefreshNeeded) {
+                    mRenderContext->getPathVisualizerManager()->requestDraw();
+                }
             }
 
             mRenderTimestamp = ++mMasterTimestamp;

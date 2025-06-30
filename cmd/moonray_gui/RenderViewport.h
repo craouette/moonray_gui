@@ -97,8 +97,10 @@ public slots:
     void slot_setDiffuseRayColor(float r, float g, float b);
     void slot_setSpecularRayColor(float r, float g, float b);
     void slot_attachPathVisualizer();
-    void slot_hideRecordingOverlay();
-    void slot_processProgressiveDraw(int state);
+    void slot_processUseSceneSamples(int useSceneSamples);
+    void slot_processPixelSamples(int samples);
+    void slot_processLightSamples(int samples);
+    void slot_processBsdfSamples(int samples);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;

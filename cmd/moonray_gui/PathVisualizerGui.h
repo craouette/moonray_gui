@@ -7,6 +7,7 @@
 
 class QGridLayout;
 class QPushButton;
+class QSpinBox;
 
 namespace moonray_gui {
 
@@ -22,9 +23,13 @@ public:
 
     ~PathVisualizerGui();
 
+public slots:
+    void slot_toggleSamplingSettings(int useSceneSamples);
+
 private:
 
     void setupPixelUI(QGridLayout* layout);
+    void setupSamplingUI(QGridLayout* layout);
     void setupDepthUI(QGridLayout* layout);
     void setupVisibilityUI(QGridLayout* layout);
     void setupRecordBtn(QGridLayout* layout);
@@ -32,6 +37,10 @@ private:
 
     RenderViewport* mRenderViewport;
     int mCurrentRow;
+
+    QSpinBox* mPixelSamples;
+    QSpinBox* mLightSamples;
+    QSpinBox* mBsdfSamples;
 
     ColorPicker* mDiffuseRayColorPicker;
     ColorPicker* mSpecularRayColorPicker;

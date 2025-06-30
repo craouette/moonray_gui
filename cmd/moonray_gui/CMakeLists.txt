@@ -91,6 +91,9 @@ MoonrayGui_cxx_compile_features(${target})
 MoonrayGui_cxx_compile_options(${target})
 MoonrayGui_link_options(${target})
 
+qt_add_resources(APP_RESOURCES resources.qrc)
+target_sources(${target} PRIVATE ${APP_RESOURCES})
+
 # Disable OCIO if not found
 if (NOT OpenColorIO_FOUND)
     target_compile_definitions(${target} PRIVATE DISABLE_OCIO)

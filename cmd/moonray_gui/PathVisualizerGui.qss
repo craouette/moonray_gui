@@ -1,0 +1,35 @@
+QWidget {
+    color: white;
+    font-size: 15px;
+}
+
+QSpinBox {
+    background-color: #333333;
+    width: 50px;
+}
+
+QSpinBox:disabled {
+    background-color: #121212;
+    color: grey;
+    width: 50px;
+}
+
+*[class~="button"] {
+    background-color: #b8d3ff;
+    color: black;
+    border-radius: 5px;
+    margin: 10px;
+    width: 70px;
+    padding: 5px;
+}
+
+QPushButton:hover {
+    background-color: #98b9ed;
+}
+
+*[class~="header"] {
+    background-color: #787878;
+    padding:5px;
+    font: bold 16px;
+    margin-top: 5px;
+}

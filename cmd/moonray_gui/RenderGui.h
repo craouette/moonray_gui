@@ -77,13 +77,6 @@ public:
 
     bool close();
 
-    bool pathVisualizerAttached() const { return mPathVisualizerAttached; }
-    void setPathVisualizerAttached() { mPathVisualizerAttached = true; }
-    void resetPathVisualizerAttached() { mPathVisualizerAttached = false; }
-    void hideRecordingOverlay() { mMainWindow->hideRecordingOverlay(); }
-
-    void setProgressiveDraw(bool state) { mPathVisualizerProgressiveDraw = state; }
-
 private:
     uint32_t updateProgressiveRendering();
     uint32_t updateRealTimeRendering();

@@ -63,9 +63,6 @@ MainWindow::MainWindow(QWidget* parent, CameraType initialType, const char *crtO
     mTimer = new QTimer(this);
     connect(mTimer, SIGNAL(timeout()), this, SLOT(hideTextOverlay()));
 
-    /// Set up mechanism to hide overlay indicating whether we are recording data for the path visualizer
-    connect(this, SIGNAL(sig_hideRecordingOverlay()), mRenderViewport, SLOT(slot_hideRecordingOverlay()));
-
     // Print welcome message to console
     std::cout << "Welcome to Moonray GUI. Press H while running the application to open the hotkey guide." << std::endl;
 }
@@ -78,12 +75,6 @@ MainWindow::~MainWindow()
     if (mSettings) delete mSettings;
     if (mTimer) delete mTimer;
 }
-
-void MainWindow::hideRecordingOverlay()
-{
-    emit sig_hideRecordingOverlay();
-}
-
 
 void
 MainWindow::setupUi(CameraType initialType, const char *crtOverride, const std::string& snapPath)

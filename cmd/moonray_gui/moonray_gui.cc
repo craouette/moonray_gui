@@ -302,12 +302,14 @@ RaasGuiApplication::startRenderThread(void* me)
 
             std::set<std::string> changedDeltaFiles;
 
+            moonray::rndr::PathVisualizerManager* visualizer = renderContext->getPathVisualizerManager().get();
+
             while (self->mRenderGui->isActive()) {
 
                 // Execute startFrame() if renderContext has forceCallStartFrame condition
                 renderContext->forceGuiCallStartFrameIfNeed();
 
-                if (deltasWatcher->hasChanged(&changedDeltaFiles) || self->mRenderGui->pathVisualizerAttached()) {
+                if (deltasWatcher->hasChanged(&changedDeltaFiles)) {
                     currCameraXform = self->mRenderGui->endInteractiveRendering();
 
                     // Apply the deltas to the scene objects
@@ -315,7 +317,6 @@ RaasGuiApplication::startRenderThread(void* me)
                         renderContext->updateScene(filename);
                     }
                     changedDeltaFiles.clear();
-                    self->mRenderGui->resetPathVisualizerAttached();
                     // Tolerate a double to float precision loss in the gui
                     rdlaCameraXform = toFloat(camera->get(rdl2::Node::sNodeXformKey));
 
@@ -341,11 +342,30 @@ RaasGuiApplication::startRenderThread(void* me)
                     usleep(2000);
 
                 } else {
-
                     bool frameComplete = false;
 
-                    if (currFrameTimestamp > prevFrameTimestamp) {
+                    // If the visualizer is done recording rays, but we're done rendering,
+                    // we can trigger a draw call here (inside snapshotFrame)
+                    if (visualizer->isDrawRequested() && renderContext->isFrameReadyForDisplay()) {
+                        visualizer->startDraw();
+                        bool parallel = renderContext->getRenderMode() == moonray::rndr::RenderMode::REALTIME;
+                        self->mRenderGui->snapshotFrame(&outputBuffer, &heatMapBuffer, &weightBuffer, &renderBufferOdd,
+                                                        &renderOutputBuffer,
+                                                        true, parallel);
+                        self->mRenderGui->updateFrame(&outputBuffer, &renderOutputBuffer,
+                                                      false, parallel);
+                    }
 
+                    // when the visualizer is done recording ray info, we need to stop the frame,
+                    // if necessary, then request that drawing begin
+                    if (visualizer->isInStopRecordState()) {
+                        if (renderContext->isFrameRendering()) {
+                            renderContext->stopFrame();
+                        }
+                        visualizer->requestDraw();
+                    }
+
+                    if (currFrameTimestamp > prevFrameTimestamp) {
                         // We've hit a brand new frame, do any new frame logic here...
                         self->mNextLogProgressTime = 0.0;
                         self->mNextLogProgressPercentage = 0.0;
@@ -354,18 +374,11 @@ RaasGuiApplication::startRenderThread(void* me)
                             frameSavedTimestamp != currFrameTimestamp &&
                             renderContext->isFrameRendering() &&
                             renderContext->isFrameComplete()) {
-
                         // We've finished rendering so get the latest version (there may have
                         // been more samples rendered since the last snapshot), and save it.
                         frameComplete = true;
                         self->printStatusLine(*renderContext, renderContext->getLastFrameMcrtStartTime(), frameComplete);
                         renderContext->stopFrame();
-
-                        if (!renderContext->getPathVisualizerManager()->isPathVisualizerOn()) {
-                            /// Hide "Recording" overlay that signals that the Path Visualizer is
-                            /// gathering data
-                            self->mRenderGui->hideRecordingOverlay();
-                        }
 
                         // If we're in realtime mode then all rendering should have stopped by this
                         // point, so use all threads for the snapshot.
@@ -373,7 +386,6 @@ RaasGuiApplication::startRenderThread(void* me)
                         self->mRenderGui->snapshotFrame(&outputBuffer, &heatMapBuffer, &weightBuffer, &renderBufferOdd,
                                                         &renderOutputBuffer,
                                                         true, parallel);
-                        renderContext->getPathVisualizerManager()->draw(&outputBuffer);
                         self->mRenderGui->updateFrame(&outputBuffer, &renderOutputBuffer,
                                                       false, parallel);
                     }
@@ -392,7 +404,7 @@ RaasGuiApplication::startRenderThread(void* me)
                         // render buffer might not have been snapshot at all if
                         // displaying alternate render outputs
                         renderContext->snapshotRenderBuffer(&outputBuffer, true, true, true);
-                        renderContext->getPathVisualizerManager()->draw(&outputBuffer);
+                        visualizer->draw(&outputBuffer);
 
                         const std::string outputFilename = renderContext->getSceneContext().getSceneVariables().get(rdl2::SceneVariables::sOutputFile);
                         const rdl2::SceneObject *metadata = renderContext->getSceneContext().getSceneVariables().getExrHeaderAttributes();
@@ -425,10 +437,6 @@ RaasGuiApplication::startRenderThread(void* me)
 
                     // Grab most recent camera transform.
                     currCameraXform = self->mRenderGui->endInteractiveRendering();
-
-                    /// If the scene changes, we've stopped recording data for the 
-                    /// path visualizer. Remove the "Recording" overlay. 
-                    self->mRenderGui->hideRecordingOverlay();
 
                     // Get out of this loop to pick up changes.
                     std::cout << "Scene change detected." << std::endl;
