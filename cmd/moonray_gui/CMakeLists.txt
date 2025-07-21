@@ -91,7 +91,12 @@ MoonrayGui_cxx_compile_features(${target})
 MoonrayGui_cxx_compile_options(${target})
 MoonrayGui_link_options(${target})
 
-qt_add_resources(APP_RESOURCES resources.qrc)
+if(Qt5Core_VERSION VERSION_GREATER_EQUAL "5.15.0") 
+    qt_add_resources(APP_RESOURCES resources.qrc)
+else()
+    qt5_add_resources(APP_RESOURCES resources.qrc)
+endif()
+
 target_sources(${target} PRIVATE ${APP_RESOURCES})
 
 # Disable OCIO if not found
