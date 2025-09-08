@@ -1,4 +1,4 @@
-// Copyright 2023-2024 DreamWorks Animation LLC
+// Copyright 2023-2025 DreamWorks Animation LLC
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -18,6 +18,7 @@
 #include <QWidget>
 #include <QSpinBox>
 #include <QCheckBox>
+#include <QGridLayout>
 
 class QLabel;
 
@@ -77,30 +78,16 @@ public:
                                          "\nGamma: " + QString::number(mGamma); }
 
     void setRenderGui(RenderGui* renderGui) { mRenderGui = renderGui; }
+
+    void processPixel(int x, int y);
     
     static const char* mHelp;
 
-    void forceFrameRedraw();
 public slots:
-    void slot_processPixelXValue(int i);
-    void slot_processPixelYValue(int i);
-    void slot_processMaxDepth(int i);
-    void slot_processOcclusionRayFlag(int state);
-    void slot_processSpecularRayFlag(int state);
-    void slot_processDiffuseRayFlag(int state);
-    void slot_processBsdfSampleFlag(int state);
-    void slot_processLightSampleFlag(int state);
-    void slot_setLineWidth(int value);
-    void slot_setBsdfSampleColor(float r, float g, float b);
-    void slot_setLightSampleColor(float r, float g, float b);
-    void slot_setCameraRayColor(float r, float g, float b);
-    void slot_setDiffuseRayColor(float r, float g, float b);
-    void slot_setSpecularRayColor(float r, float g, float b);
-    void slot_attachPathVisualizer();
-    void slot_processUseSceneSamples(int useSceneSamples);
-    void slot_processPixelSamples(int samples);
-    void slot_processLightSamples(int samples);
-    void slot_processBsdfSamples(int samples);
+    void slot_forceFrameRedraw();
+
+signals:
+    void sig_pixelSelected(int x, int y);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
@@ -113,11 +100,15 @@ private:
     void setupUi();
 
     RenderGui* mRenderGui;
+
     moonray_gui::PathVisualizerGui* mPathVisualizerGui;
+    bool mPathVisualizerGuiInitialized;
 
     QLabel* mImageLabel;
     QLabel* mImageOverlay;
     QLabel* mRecordingText;
+
+    QGridLayout* mLayout;
 
     // OpenGL CRT
     GlslBuffer *mGlslBuffer;

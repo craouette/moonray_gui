@@ -31,22 +31,31 @@ ColorPicker::ColorPicker(QWidget* parent, QString labelString, QColor initialCol
                                                                                  .arg(initialColor.green())
                                                                                  .arg(initialColor.blue());
     mSelector->setStyleSheet(style);
-    connect(mSelector, SIGNAL(clicked()), this, SLOT(slot_changeColor()));
+    connect(mSelector, SIGNAL(clicked()), this, SLOT(slot_openColorDialog()));
     layout->addWidget(mSelector);
+
+    mColorDialog = new QColorDialog(initialColor, this);
+    mColorDialog->hide();
+    connect(mColorDialog, SIGNAL(colorSelected(const QColor&)), this, SLOT(slot_changeColor(const QColor&)));
 
     // Set the layout for this widget
     setLayout(layout);
 }
 
-void ColorPicker::slot_changeColor()
+void ColorPicker::slot_openColorDialog()
 {
-    mColor = QColorDialog::getColor();
+    mColorDialog->show();
+}
+
+void ColorPicker::slot_changeColor(const QColor& color)
+{
+    mColor = color;
     QString style = QString("QPushButton { background-color: rgb(%1, %2, %3); }").arg(mColor.red())
                                                                                  .arg(mColor.green())
                                                                                  .arg(mColor.blue());
     mSelector->setStyleSheet(style);
 
-    emit sig_colorChanged(mColor.red(), mColor.green(), mColor.blue());
+    emit sig_colorChanged(mColor);
 }
 
 }

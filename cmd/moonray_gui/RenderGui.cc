@@ -1,4 +1,4 @@
-// Copyright 2023-2024 DreamWorks Animation LLC
+// Copyright 2023-2025 DreamWorks Animation LLC
 // SPDX-License-Identifier: Apache-2.0
 
 #include "FrameUpdateEvent.h"
@@ -279,6 +279,10 @@ RenderGui::updateFrame(const scene_rdl2::fb_util::RenderBuffer *renderBuffer,
                        bool showProgress,
                        bool parallel)
 {
+    /// Don't update frame while we're running the visualizer simulation
+    const moonray::rndr::PathVisualizerManager* visualizer = mRenderContext->getPathVisualizerManager().get();
+    if (visualizer->isProcessing()) { return; }
+
     const DebugMode mode = mMainWindow->getRenderViewport()->getDebugMode();
     const bool applyCrt = mMainWindow->getRenderViewport()->getApplyColorRenderTransform();
     const float exposure = mMainWindow->getRenderViewport()->getExposure();
@@ -441,6 +445,9 @@ RenderGui::snapshotFrame(scene_rdl2::fb_util::RenderBuffer *renderBuffer,
     DebugMode mode = mMainWindow->getRenderViewport()->getDebugMode();
     moonray::rndr::PathVisualizerManager* visualizer = mRenderContext->getPathVisualizerManager().get();
 
+    // Don't snapshot frame while visualizer is gathering data
+    if (visualizer->isProcessing()) { return; }
+
     // Special case if debug mode is set to NUM_SAMPLES, in which case we want to display
     // the weights buffer directly with some transform applied to aid visualization.
     if (mode == NUM_SAMPLES) {
@@ -567,6 +574,8 @@ RenderGui::updateProgressiveRendering()
 
     // RenderOutputDriver must exist to render a frame
     const auto *rod = mRenderContext->getRenderOutputDriver();
+
+    moonray::rndr::PathVisualizerManager* visualizer = mRenderContext->getPathVisualizerManager().get();
     bool visualizerRefreshNeeded = false;
 
     // This block of code won't get executed on the first iteration after
@@ -606,13 +615,7 @@ RenderGui::updateProgressiveRendering()
 
             updated = true;
         }
-
-        if (mRenderContext->getPathVisualizerManager()->getNeedsRenderRefresh() && !mRenderContext->isFrameRendering()) {
-            mRenderContext->getPathVisualizerManager()->setNeedsRenderRefresh(false);
-            visualizerRefreshNeeded = true;
-        }
-
-    } 
+    }
 
     // Special case for when we want to resend the frame buffer even after it
     // has completed rendering. One current example is if you toggle the show
@@ -636,6 +639,20 @@ RenderGui::updateProgressiveRendering()
         const bool cameraChanged = !math::isEqual(mLastCameraXform, cameraXform);
         bool sceneChanged = cameraChanged || (mMasterTimestamp != mRenderTimestamp) || visualizerRefreshNeeded;
 
+        // The user specified we should start the visualizer
+        if (visualizer->isInStartRecordState()) {
+
+            // If we're rendering, we need to stop in order to run the ray simulation
+            if (mRenderContext->isFrameRendering()) {
+                mRenderContext->stopFrame();
+                // If we stopped a rendering process, specify that we need
+                // to re-start it after running the visualizer
+                visualizer->setNeedsRenderRefresh(true);
+            }
+            visualizer->setRecordState();
+            mRenderContext->startFrame(/*simulationMode*/ true);
+        }
+
         // Check if the progressive mode changed
         moonray::rndr::RenderMode currentMode = renderVp->isFastProgressive() ?
             moonray::rndr::RenderMode::PROGRESSIVE_FAST :
@@ -656,11 +673,7 @@ RenderGui::updateProgressiveRendering()
 
             // Stop the previous frame (if we were rendering one).
             if (mRenderContext->isFrameRendering()) {
-                mRenderContext->stopFrame();
-
-                if (visualizerRefreshNeeded) {
-                    mRenderContext->getPathVisualizerManager()->requestDraw();
-                }
+                mRenderContext->stopFrame(visualizerRefreshNeeded);
             }
 
             mRenderTimestamp = ++mMasterTimestamp;
@@ -676,6 +689,11 @@ RenderGui::updateProgressiveRendering()
 
             // Kick off a new frame with the updated camera/progressive mode
             mRenderContext->startFrame();
+
+            // if the camera changes, we need to re-generate the lines from the new camera perspective
+            if (cameraChanged && visualizer->isInDrawState()) {
+                visualizer->generateLines();
+            }
 
             // Update the tile progress rendering state.
             mOkToRenderTiles = false;

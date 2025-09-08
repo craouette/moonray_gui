@@ -1,4 +1,4 @@
-// Copyright 2023-2024 DreamWorks Animation LLC
+// Copyright 2023-2025 DreamWorks Animation LLC
 // SPDX-License-Identifier: Apache-2.0
 
 #include <boost/regex.hpp>
@@ -344,25 +344,30 @@ RaasGuiApplication::startRenderThread(void* me)
                 } else {
                     bool frameComplete = false;
 
-                    // If the visualizer is done recording rays, but we're done rendering,
-                    // we can trigger a draw call here (inside snapshotFrame)
-                    if (visualizer->isDrawRequested() && renderContext->isFrameReadyForDisplay()) {
-                        visualizer->startDraw();
-                        bool parallel = renderContext->getRenderMode() == moonray::rndr::RenderMode::REALTIME;
-                        self->mRenderGui->snapshotFrame(&outputBuffer, &heatMapBuffer, &weightBuffer, &renderBufferOdd,
-                                                        &renderOutputBuffer,
-                                                        true, parallel);
-                        self->mRenderGui->updateFrame(&outputBuffer, &renderOutputBuffer,
-                                                      false, parallel);
-                    }
-
                     // when the visualizer is done recording ray info, we need to stop the frame,
                     // if necessary, then request that drawing begin
                     if (visualizer->isInStopRecordState()) {
                         if (renderContext->isFrameRendering()) {
-                            renderContext->stopFrame();
+                            renderContext->stopFrame(/*simulationMode*/ true);
                         }
-                        visualizer->requestDraw();
+                        /// TODO: By calling startFrame here, it ensures that, even
+                        /// if rendering is complete, it will force a full render
+                        /// restart. Ideally, if we are finished rendering, we would only
+                        /// run the simulation (see moonray::RenderContext::forceCameraUpdates())
+                        /// TODO: Also, ideally we wouldn't do heavy renderPrep work inside the event loop
+                        renderContext->startFrame();
+                        visualizer->generateLines();
+
+                        /// TODO: This section could be improved for efficiency. This conditional section will rarely
+                        /// (if ever) be entered because the first snapshot likely will not be ready before
+                        /// generateLines is complete. However, we do want to take a snapshot as soon as possible.
+                        if (renderContext->isFrameReadyForDisplay()) {
+                            const bool parallel = renderContext->getRenderMode() == moonray::rndr::RenderMode::REALTIME;
+                            self->mRenderGui->snapshotFrame(&outputBuffer, &heatMapBuffer, &weightBuffer, 
+                                                            &renderBufferOdd, &renderOutputBuffer,
+                                                            true, parallel);
+                            self->mRenderGui->updateFrame(&outputBuffer, &renderOutputBuffer, false, parallel);
+                        }
                     }
 
                     if (currFrameTimestamp > prevFrameTimestamp) {
@@ -404,7 +409,9 @@ RaasGuiApplication::startRenderThread(void* me)
                         // render buffer might not have been snapshot at all if
                         // displaying alternate render outputs
                         renderContext->snapshotRenderBuffer(&outputBuffer, true, true, true);
-                        visualizer->draw(&outputBuffer);
+                        if (visualizer->isInDrawState()) {
+                            visualizer->draw(&outputBuffer);
+                        }
 
                         const std::string outputFilename = renderContext->getSceneContext().getSceneVariables().get(rdl2::SceneVariables::sOutputFile);
                         const rdl2::SceneObject *metadata = renderContext->getSceneContext().getSceneVariables().getExrHeaderAttributes();

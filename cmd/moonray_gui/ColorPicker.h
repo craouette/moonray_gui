@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <QColorDialog>
 #include <QWidget>
 #include <QObject>
 
@@ -26,13 +27,15 @@ public:
 
 private:
     QColor mColor;
+    QColorDialog* mColorDialog;
     QPushButton* mSelector;
     
 signals:
-    void sig_colorChanged(float r, float g, float b);
+    void sig_colorChanged(const QColor& color);
 
 public slots:
-    void slot_changeColor();
+    void slot_changeColor(const QColor& color);
+    void slot_openColorDialog();
 };
 
 } // namespace moonray_gui

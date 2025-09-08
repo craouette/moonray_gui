@@ -1,4 +1,4 @@
-// Copyright 2023-2024 DreamWorks Animation LLC
+// Copyright 2023-2025 DreamWorks Animation LLC
 // SPDX-License-Identifier: Apache-2.0
 
 
@@ -109,6 +109,7 @@ F: refocus on point under mouse cursor)";
 RenderViewport::RenderViewport(QWidget* parent, CameraType intialType, const char *crtOverride, const std::string& snapPath) :
     QWidget(parent),
     mRenderGui(nullptr),
+    mPathVisualizerGuiInitialized(false),
     mImageLabel(nullptr),
     mGlslBuffer(nullptr),
     mWidth(-1),
@@ -218,16 +219,11 @@ RenderViewport::setupUi()
 {
     mImageLabel = new QLabel;
 
-    QGridLayout* layout = new QGridLayout;
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(mImageLabel, 0, 0, 10, 1);
+    mLayout = new QGridLayout;
+    mLayout->setContentsMargins(0, 0, 0, 0);
+    mLayout->addWidget(mImageLabel, 0, 0, 10, 1);
 
-    // Create path visualizer gui and hide by default
-    mPathVisualizerGui = new moonray_gui::PathVisualizerGui(this); 
-    layout->addWidget(mPathVisualizerGui, 0, 1, 1, 1);
-    mPathVisualizerGui->hide();
-
-    setLayout(layout);
+    setLayout(mLayout);
 
     mWidth = -1;
     mHeight = -1;
@@ -372,10 +368,26 @@ RenderViewport::keyPressEvent(QKeyEvent *event)
         }
 
         if (event->key() == Qt::Key_V) {
-            if (mPathVisualizerGui->isVisible()) {
-                mPathVisualizerGui->hide();
+            if (mPathVisualizerGuiInitialized) {
+                if (mPathVisualizerGui->isVisible()) {
+                    mPathVisualizerGui->hide();
+                } else {
+                    mPathVisualizerGui->show();
+                }
             } else {
-                mPathVisualizerGui->show();
+                // Create path visualizer gui if the menu is opened for the first time
+                mPathVisualizerGui = new moonray_gui::PathVisualizerGui(
+                                        this, mRenderContext->getPathVisualizerManager().get());
+
+                // When any changes to the style are made, re-draw the frame
+                connect(mPathVisualizerGui, SIGNAL(sig_styleParamChanged()), this, SLOT(slot_forceFrameRedraw()));
+
+                // When a user selects a pixel with their cursor, change the GUI and restart the simulation
+                connect(this, SIGNAL(sig_pixelSelected(int, int)), mPathVisualizerGui, SLOT(slot_processPixel(int, int)));
+
+                mLayout->addWidget(mPathVisualizerGui, 0, 1, 1, 1);
+                mPathVisualizerGuiInitialized = true;
+
             }
         }
 
@@ -760,6 +772,14 @@ RenderViewport::mousePressEvent(QMouseEvent *event)
         default:
             QWidget::mousePressEvent(event);
         }
+
+        // Capture the mouse position for the visualizer
+        const int heightDiscrepancy = mImageLabel->height() - mHeight - 1;
+        const int finalY = y + static_cast<int>(heightDiscrepancy*0.5f);
+
+        if (x >= 0 && x < mWidth && finalY >= 0 && finalY < mHeight) {
+            emit sig_pixelSelected(x, finalY);
+        }
     }
 }
 
@@ -825,149 +845,19 @@ RenderViewport::mouseMoveEvent(QMouseEvent *event)
     }
 }
 
-void RenderViewport::forceFrameRedraw()
-{
-    mRenderContext->getPathVisualizerManager()->requestDraw();
-}
-
 void
-RenderViewport::slot_processPixelXValue(int i)
+RenderViewport::slot_forceFrameRedraw()
 {
-    mRenderContext->getPathVisualizerManager()->setPixelX(i);
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
+    scene_rdl2::fb_util::RenderBuffer        outputBuffer;
+    scene_rdl2::fb_util::HeatMapBuffer       heatMapBuffer;
+    scene_rdl2::fb_util::FloatBuffer         weightBuffer;
+    scene_rdl2::fb_util::RenderBuffer        renderBufferOdd;
+    scene_rdl2::fb_util::VariablePixelBuffer renderOutputBuffer;
 
-void
-RenderViewport::slot_processPixelYValue(int i)
-{
-    mRenderContext->getPathVisualizerManager()->setPixelY(i);
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-
-void
-RenderViewport::slot_processMaxDepth(int i)
-{
-    mRenderContext->getPathVisualizerManager()->setMaxDepth(i);
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-
-void
-RenderViewport::slot_processOcclusionRayFlag(int state)
-{
-    if (state == 0) {
-        mRenderContext->getPathVisualizerManager()->setOcclusionRaysFlag(false);
-    } else {
-        mRenderContext->getPathVisualizerManager()->setOcclusionRaysFlag(true);
-    }
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-
-void
-RenderViewport::slot_processSpecularRayFlag(int state)
-{
-    if (state == 0) {
-        mRenderContext->getPathVisualizerManager()->setSpecularRaysFlag(false);
-    } else {
-        mRenderContext->getPathVisualizerManager()->setSpecularRaysFlag(true);
-    }
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-
-void
-RenderViewport::slot_processDiffuseRayFlag(int state)
-{
-    if (state == 0) {
-        mRenderContext->getPathVisualizerManager()->setDiffuseRaysFlag(false);
-    } else {
-        mRenderContext->getPathVisualizerManager()->setDiffuseRaysFlag(true);
-    }
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-
-void
-RenderViewport::slot_processBsdfSampleFlag(int state)
-{
-    if (state == 0) {
-        mRenderContext->getPathVisualizerManager()->setBsdfSamplesFlag(false);
-    } else {
-        mRenderContext->getPathVisualizerManager()->setBsdfSamplesFlag(true);
-    }
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-
-void
-RenderViewport::slot_processLightSampleFlag(int state)
-{
-    if (state == 0) {
-        mRenderContext->getPathVisualizerManager()->setLightSamplesFlag(false);
-    } else {
-        mRenderContext->getPathVisualizerManager()->setLightSamplesFlag(true);
-    }
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-
-void
-RenderViewport::slot_attachPathVisualizer()
-{
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-
-void
-RenderViewport::slot_setLineWidth(int value)
-{
-    mRenderContext->getPathVisualizerManager()->setLineWidth(value);
-    forceFrameRedraw();
-}
-
-void RenderViewport::slot_setBsdfSampleColor(float r, float g, float b) 
-{ 
-    mRenderContext->getPathVisualizerManager()->setBsdfSampleColor(scene_rdl2::math::Color(r / 255.0, g / 255.0, b / 255.0)); 
-    forceFrameRedraw(); 
-}
-
-void RenderViewport::slot_setLightSampleColor(float r, float g, float b) 
-{ 
-    mRenderContext->getPathVisualizerManager()->setLightSampleColor(scene_rdl2::math::Color(r / 255.0, g / 255.0, b / 255.0)); 
-    forceFrameRedraw(); 
-}
-
-void RenderViewport::slot_setCameraRayColor(float r, float g, float b) 
-{ 
-    mRenderContext->getPathVisualizerManager()->setCameraRayColor(scene_rdl2::math::Color(r / 255.0, g / 255.0, b / 255.0)); 
-    forceFrameRedraw(); 
-}
-
-void RenderViewport::slot_setDiffuseRayColor(float r, float g, float b) 
-{ 
-    mRenderContext->getPathVisualizerManager()->setDiffuseRayColor(scene_rdl2::math::Color(r / 255.0, g / 255.0, b / 255.0)); 
-    forceFrameRedraw(); 
-}
-
-void RenderViewport::slot_setSpecularRayColor(float r, float g, float b) 
-{ 
-    mRenderContext->getPathVisualizerManager()->setSpecularRayColor(scene_rdl2::math::Color(r / 255.0, g / 255.0, b / 255.0)); 
-    forceFrameRedraw(); 
-}
-
-void RenderViewport::slot_processUseSceneSamples(int useSceneSamples) 
-{ 
-    mRenderContext->getPathVisualizerManager()->setUseSceneSamples(useSceneSamples); 
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-void RenderViewport::slot_processPixelSamples(int samples) 
-{ 
-    mRenderContext->getPathVisualizerManager()->setPixelSamples(samples); 
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-void RenderViewport::slot_processLightSamples(int samples) 
-{ 
-    mRenderContext->getPathVisualizerManager()->setLightSamples(samples); 
-    mRenderContext->getPathVisualizerManager()->startSimulation();
-}
-void RenderViewport::slot_processBsdfSamples(int samples) 
-{ 
-    mRenderContext->getPathVisualizerManager()->setBsdfSamples(samples); 
-    mRenderContext->getPathVisualizerManager()->startSimulation();
+    const bool parallel = mRenderContext->getRenderMode() == moonray::rndr::RenderMode::REALTIME;
+    mRenderGui->snapshotFrame(&outputBuffer, &heatMapBuffer, &weightBuffer, &renderBufferOdd, &renderOutputBuffer,
+                              true, parallel);
+    mRenderGui->updateFrame(&outputBuffer, &renderOutputBuffer, false, parallel);
 }
 
 } // namespace moonray_gui

@@ -33,3 +33,39 @@ QPushButton:hover {
     font: bold 16px;
     margin-top: 5px;
 }
+
+QSlider {
+    height: 25px;
+}
+
+QSlider::handle:horizontal {
+    background-color: #51A0D5;
+    width: 15px;
+    height: 25px;
+    border-radius: 4px;
+    margin: -5px 0px; /* Adjust margin if handle extends beyond groove */
+}
+
+QSlider::groove {
+    border: 1px solid #808080;
+    background: #2e2e2e;
+    height: 20px;
+    border-radius: 4px;
+}
+
+QCheckBox {
+    margin: 3px;
+}
+
+QCheckBox::indicator {
+    border: 1px solid #808080;
+    border-radius: 4px;
+    width: 15px;
+    height: 15px;
+    background-color: #2e2e2e;
+}
+
+QCheckBox::indicator::checked {
+    background-color: #789c81;
+    border: 1px solid #85eda1;
+}
