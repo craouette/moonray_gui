@@ -46,7 +46,6 @@ requires = [
     'moonray-17.25',
     'mcrt_denoise-6.14',
     'opencolorio-2',
-    'ocio_configs',
     'qt',
 ]
 
