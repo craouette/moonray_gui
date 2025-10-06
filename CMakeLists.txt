@@ -14,8 +14,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(OMR_Platform)
 
-option(MOONRAY_GUI_USE_MKL "Whether to link Mkl into moonray_gui executable" NO)
-
 option(ABI_SET_VERSION "Enable the abi-version option" OFF)
 if(ABI_SET_VERSION)
     set(ABI_VERSION "6" CACHE STRING "If ABI_SET_VERSION is on, which version to set")
@@ -41,14 +39,19 @@ find_package(Qt5 REQUIRED
 find_package(OpenGL REQUIRED)
 find_package(CppUnit REQUIRED)
 
-# Intel Math Kernel is not required by Moonray itself, but currently it has to
-# be linked into the application if any dsos require it. Therefore we link it
-# if it is available
-find_package(Mkl)
-if(${Mkl_FOUND})
-    set(MKL Mkl::Mkl)
-    set(MOONRAY_GUI_USE_MKL YES)
+# Intel Math Kernel Library is not required by Moonray itself, but currently it has to
+# be linked into the application if any dsos require it. Therefore we link it if it is available.
+set(MKL_THREADING tbb_thread) # Override the default MKL threading (intel_thread, which requires OMP) to use tbb_thread
+find_package(MKL CONFIG QUIET) # Look for an official MKL package first
+if(NOT TARGET MKL::MKL)
+    find_package(MKL QUIET) # Fallback to the FindMKL module
 endif()
+if(TARGET MKL::MKL)
+    set(MKL_target "MKL::MKL") # we'll use this in the target_link_libraries calls
+else()
+    message(STATUS "MKL not found, skipping")
+endif()
+
 if("${PROJECT_NAME}" STREQUAL "${CMAKE_PROJECT_NAME}")
     find_package(Moonray REQUIRED)
     find_package(McrtDenoise REQUIRED)

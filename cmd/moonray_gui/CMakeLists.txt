@@ -68,7 +68,7 @@ target_link_libraries(${target}
     PRIVATE
         Boost::regex
         McrtDenoise::denoiser
-        ${MKL}
+        ${MKL_target}
         ${OCIO}
         Moonray::application
         Moonray::rendering_rndr
@@ -91,7 +91,7 @@ MoonrayGui_cxx_compile_features(${target})
 MoonrayGui_cxx_compile_options(${target})
 MoonrayGui_link_options(${target})
 
-if(Qt5Core_VERSION VERSION_GREATER_EQUAL "5.15.0") 
+if(Qt5Core_VERSION VERSION_GREATER_EQUAL "5.15.0")
     qt_add_resources(APP_RESOURCES resources.qrc)
 else()
     qt5_add_resources(APP_RESOURCES resources.qrc)
