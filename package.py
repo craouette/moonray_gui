@@ -60,6 +60,12 @@ variants = [
     #     'refplat-vfx2025.0',
     #     'gcc-11.x'
     # ],
+    # [
+    #     'os-rocky-9',
+    #     'opt_level-optdebug',
+    #     'refplat-houdini21.0',
+    #     'gcc-11.x'
+    # ],
     [   # variant 3
         'os-rocky-9',
         'opt_level-optdebug',
