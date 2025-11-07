@@ -36,7 +36,7 @@ find_package(Qt5 REQUIRED
         Gui
         OpenGL)
 
-find_package(OpenGL REQUIRED)
+find_package(OpenGL 3 REQUIRED)
 find_package(CppUnit REQUIRED)
 
 # Intel Math Kernel Library is not required by Moonray itself, but currently it has to

@@ -1,0 +1,129 @@
+// Copyright 2025 DreamWorks Animation LLC
+// SPDX-License-Identifier: Apache-2.0
+
+#include "FileUtil.h"
+
+#include <moonray/application/RaasApplication.h>
+#include <moonray/rendering/rndr/RenderContext.h>
+
+#include <boost/regex.hpp>
+#include <fstream>
+
+namespace moonray_gui_v2 {
+
+void saveEXR(moonray::rndr::RenderContext* renderContext)
+{
+    // Create temporary buffers to snapshot into
+    scene_rdl2::fb_util::RenderBuffer        renderBuffer;
+    scene_rdl2::fb_util::HeatMapBuffer       heatMapBuffer;
+    scene_rdl2::fb_util::FloatBuffer         weightBuffer;
+    scene_rdl2::fb_util::RenderBuffer        renderBufferOdd;
+    scene_rdl2::fb_util::VariablePixelBuffer renderOutputBuffer;
+
+    std::vector<scene_rdl2::fb_util::VariablePixelBuffer> aovBuffers;
+    std::vector<scene_rdl2::fb_util::VariablePixelBuffer> displayFilterBuffers;
+
+    // Snapshot the main render buffer
+    renderContext->snapshotRenderBuffer(&renderBuffer, /*untile*/ true, /*parallel*/ true, /*usePrimaryAov*/ true);
+
+    // Write out the main beauty image
+    const scene_rdl2::rdl2::SceneVariables& sceneVars = renderContext->getSceneContext().getSceneVariables();
+    const std::string& outputFilename = sceneVars.get(scene_rdl2::rdl2::SceneVariables::sOutputFile);
+    const scene_rdl2::rdl2::SceneObject* metadata = sceneVars.getExrHeaderAttributes();
+
+    const scene_rdl2::math::HalfOpenViewport& aperture = renderContext->getRezedApertureWindow();
+    const scene_rdl2::math::HalfOpenViewport& region = renderContext->getRezedRegionWindow();
+
+    moonray::writeImageWithMessage(&renderBuffer, outputFilename, metadata, aperture, region);
+
+    // Write any arbitrary RenderOutput objects
+    renderContext->snapshotHeatMapBuffer(&heatMapBuffer, /*untile*/ true, /*parallel*/ true);
+    renderContext->snapshotWeightBuffer(&weightBuffer, /*untile*/ true, /*parallel*/ true);
+    renderContext->snapshotAovBuffers(aovBuffers, /*untile*/ true, /*parallel*/ true);
+    renderContext->snapshotRenderBufferOdd(&renderBufferOdd, /*untile*/ true, /*parallel*/ true);
+    renderContext->snapshotDisplayFilterBuffers(displayFilterBuffers, /*untile*/ true, /*parallel*/ true);
+
+    const moonray::pbr::DeepBuffer* deepBuffer = renderContext->getDeepBuffer();
+    moonray::pbr::CryptomatteBuffer* cryptomatteBuffer = renderContext->getCryptomatteBuffer();
+    moonray::writeRenderOutputsWithMessages(renderContext->getRenderOutputDriver(),
+                                            deepBuffer, cryptomatteBuffer, &heatMapBuffer,
+                                            &weightBuffer, &renderBufferOdd, aovBuffers,
+                                            displayFilterBuffers);
+}
+
+void parseRdlaFileForReferences (
+    const std::string &sceneFile,
+    std::set<std::string> &referencedRdlaFiles,
+    std::map<std::string, std::string> &luaVariables
+){
+    // Keep the newly found rdla files separate for recursion
+    std::set<std::string> newReferencedRdlaFiles;
+
+    // Open sceneFile
+    std::ifstream fin;
+    fin.open(sceneFile);
+    if (!fin.good()) {
+        std::cerr << "Failed to load scenefile: " << sceneFile
+            << std::endl;
+        return;
+    }
+
+    // Find rdla references with variable concatenation like the following:
+    // dofile(asset_lib_dir .. "char/astrid/skin/rdla/astrid_skin.rdla")
+    // TODO: Make this work with more than one variable preceding the path
+    //boost::regex rdlaWithVariableRegex (R"(.*\((\w+)\s+\.\.\s+\"+(.*rdla)\"+.*)");
+    boost::regex rdlaWithVariableRegex (R"([^-]*\((\w+)\s+\.\.\s+\"+(.*rdla)\"+.*)");
+
+    // Find straight rdla references with no variables lines like the following:
+    // dofile("/work/gshad/moonshine/lib/char/astrid/skin/rdla/astrid_skin.rdla")
+    boost::regex rdlaWithoutVariableRegex (R"([^-]*\"+(.*rdla)\"+.*)");
+
+    // Find lua variable assignment lines like the following:
+    // asset_lib_dir = "/work/gshad/moonshine/lib/"
+    boost::regex variableAssignmentRegex (R"(^\s*(\w+)\s*=\s*\"+(.*)\"+)");
+
+    std::string buf;
+    while (std::getline(fin, buf)) {
+        // Really long lines can cause issues for the regex parser.
+        // Long lines are usually layer entries, or rdl mesh attributes, and
+        // certainly do not contain rdla file references.
+        const unsigned int maxLineSize = 1024;
+        if (buf.size() > maxLineSize) continue;
+
+        boost::cmatch cm;
+        if (boost::regex_match(buf.c_str(), cm, rdlaWithVariableRegex)) {
+            // Found line with .rdla file with variable used.
+            // Try to find the lua variable in the map and then
+            // add it to the found rdla path.
+            std::string luaVariable = cm[1];
+            std::string rdlaPath = cm[2];
+            if (luaVariables.find(luaVariable) != luaVariables.end()) {
+                std::string &luaVariableValue = luaVariables[luaVariable];
+                if (luaVariableValue.back() == '/')
+                    newReferencedRdlaFiles.insert(luaVariableValue + rdlaPath);
+                else
+                    newReferencedRdlaFiles.insert(luaVariableValue + '/' + rdlaPath);
+            }
+        } else if (boost::regex_match(buf.c_str(), cm, rdlaWithoutVariableRegex)) {
+            // Found line with .rdla file and no variable used.
+            // Just add the rdla file to the set.
+            newReferencedRdlaFiles.insert(cm[1]);
+        } else if (boost::regex_match(buf.c_str(), cm, variableAssignmentRegex)) {
+            // Found line with variable assignment.
+            // Add it to the map.
+            luaVariables[cm[1]] = cm[2];
+        }
+        // Add other regex situations here
+    }
+    fin.close();
+
+    // Parse referenced rdla files recursively
+    for (auto &rdlaFile : newReferencedRdlaFiles) {
+        parseRdlaFileForReferences (rdlaFile, referencedRdlaFiles, luaVariables);
+    }
+
+    // Concatenate the new set onto the set passed in
+    referencedRdlaFiles.insert(newReferencedRdlaFiles.begin(), newReferencedRdlaFiles.end());
+}
+
+} // end namespace moonray_gui_v2

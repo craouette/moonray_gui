@@ -87,6 +87,7 @@ requires = [
     'mcrt_denoise-6.19',
     'opencolorio-2',
     'qt',
+    'glfw'
 ]
 
 private_build_requires = [
