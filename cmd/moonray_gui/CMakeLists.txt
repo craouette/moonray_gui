@@ -66,7 +66,6 @@ endif()
 
 target_link_libraries(${target}
     PRIVATE
-        Boost::regex
         McrtDenoise::denoiser
         ${MKL_target}
         ${OCIO}

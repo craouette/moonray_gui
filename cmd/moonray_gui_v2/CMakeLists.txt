@@ -47,7 +47,6 @@ target_include_directories(${target} PRIVATE ${PROJECT_SOURCE_DIR}/ext/imgui)
 
 target_link_libraries(${target}
     PRIVATE
-        Boost::regex
         McrtDenoise::denoiser
         ${MKL_target}
         ${OCIO}

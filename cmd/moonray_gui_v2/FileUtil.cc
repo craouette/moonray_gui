@@ -6,7 +6,7 @@
 #include <moonray/application/RaasApplication.h>
 #include <moonray/rendering/rndr/RenderContext.h>
 
-#include <boost/regex.hpp>
+#include <regex>
 #include <fstream>
 
 namespace moonray_gui_v2 {
@@ -71,16 +71,16 @@ void parseRdlaFileForReferences (
     // Find rdla references with variable concatenation like the following:
     // dofile(asset_lib_dir .. "char/astrid/skin/rdla/astrid_skin.rdla")
     // TODO: Make this work with more than one variable preceding the path
-    //boost::regex rdlaWithVariableRegex (R"(.*\((\w+)\s+\.\.\s+\"+(.*rdla)\"+.*)");
-    boost::regex rdlaWithVariableRegex (R"([^-]*\((\w+)\s+\.\.\s+\"+(.*rdla)\"+.*)");
+    //std::regex rdlaWithVariableRegex (R"(.*\((\w+)\s+\.\.\s+\"+(.*rdla)\"+.*)");
+    std::regex rdlaWithVariableRegex (R"([^-]*\((\w+)\s+\.\.\s+\"+(.*rdla)\"+.*)");
 
     // Find straight rdla references with no variables lines like the following:
     // dofile("/work/gshad/moonshine/lib/char/astrid/skin/rdla/astrid_skin.rdla")
-    boost::regex rdlaWithoutVariableRegex (R"([^-]*\"+(.*rdla)\"+.*)");
+    std::regex rdlaWithoutVariableRegex (R"([^-]*\"+(.*rdla)\"+.*)");
 
     // Find lua variable assignment lines like the following:
     // asset_lib_dir = "/work/gshad/moonshine/lib/"
-    boost::regex variableAssignmentRegex (R"(^\s*(\w+)\s*=\s*\"+(.*)\"+)");
+    std::regex variableAssignmentRegex (R"(^\s*(\w+)\s*=\s*\"+(.*)\"+)");
 
     std::string buf;
     while (std::getline(fin, buf)) {
@@ -90,8 +90,8 @@ void parseRdlaFileForReferences (
         const unsigned int maxLineSize = 1024;
         if (buf.size() > maxLineSize) continue;
 
-        boost::cmatch cm;
-        if (boost::regex_match(buf.c_str(), cm, rdlaWithVariableRegex)) {
+        std::cmatch cm;
+        if (std::regex_match(buf.c_str(), cm, rdlaWithVariableRegex)) {
             // Found line with .rdla file with variable used.
             // Try to find the lua variable in the map and then
             // add it to the found rdla path.
@@ -104,11 +104,11 @@ void parseRdlaFileForReferences (
                 else
                     newReferencedRdlaFiles.insert(luaVariableValue + '/' + rdlaPath);
             }
-        } else if (boost::regex_match(buf.c_str(), cm, rdlaWithoutVariableRegex)) {
+        } else if (std::regex_match(buf.c_str(), cm, rdlaWithoutVariableRegex)) {
             // Found line with .rdla file and no variable used.
             // Just add the rdla file to the set.
             newReferencedRdlaFiles.insert(cm[1]);
-        } else if (boost::regex_match(buf.c_str(), cm, variableAssignmentRegex)) {
+        } else if (std::regex_match(buf.c_str(), cm, variableAssignmentRegex)) {
             // Found line with variable assignment.
             // Add it to the map.
             luaVariables[cm[1]] = cm[2];

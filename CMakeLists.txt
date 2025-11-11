@@ -22,13 +22,6 @@ endif()
 # ================================================
 # Find dependencies
 # ================================================
-# TODO: setting this/these should not be necessary before calling find_package.
-# see: https://stackoverflow.com/questions/55217771/boostcmake-no-suitable-build-variant
-set(BUILD_SHARED_LIBS ON)
-find_package(Boost REQUIRED
-  COMPONENTS
-    regex
-)
 
 find_package(Qt5 REQUIRED
     COMPONENTS
