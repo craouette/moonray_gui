@@ -26,11 +26,13 @@ KeyboardBindings::KeyboardBindings()
     mKeyPressMap[KeyModPair(GLFW_KEY_E, MOD_NONE)]                = ACTION_CAM_SPEED_UP;
     mKeyPressMap[KeyModPair(GLFW_KEY_F, MOD_NONE)]                = ACTION_CAM_RECENTER;
     mKeyPressMap[KeyModPair(GLFW_KEY_H, MOD_NONE)]                = ACTION_PRINT_KEYBINDINGS;
+    mKeyPressMap[KeyModPair(GLFW_KEY_I, MOD_NONE)]                = ACTION_WINDOW_TOGGLE_SCENE_INSPECTOR;
     mKeyPressMap[KeyModPair(GLFW_KEY_K, MOD_NONE)]                = ACTION_SNAPSHOT_TAKE;
     mKeyPressMap[KeyModPair(GLFW_KEY_L, MOD_NONE)]                = ACTION_FAST_PROGRESSIVE_TOGGLE;
     mKeyPressMap[KeyModPair(GLFW_KEY_M, MOD_NONE)]                = ACTION_CAM_PRINT_MATRICES;
     mKeyPressMap[KeyModPair(GLFW_KEY_N, MOD_NONE)]                = ACTION_DENOISE_TOGGLE_ON_OFF;
     mKeyPressMap[KeyModPair(GLFW_KEY_O, MOD_NONE)]                = ACTION_CAM_TOGGLE_ACTIVE_TYPE;
+    mKeyPressMap[KeyModPair(GLFW_KEY_P, MOD_NONE)]                = ACTION_WINDOW_TOGGLE_PIXEL_INSPECTOR;
     mKeyPressMap[KeyModPair(GLFW_KEY_Q, MOD_NONE)]                = ACTION_CAM_SLOW_DOWN;
     mKeyPressMap[KeyModPair(GLFW_KEY_R, MOD_NONE)]                = ACTION_CAM_RESET;
     mKeyPressMap[KeyModPair(GLFW_KEY_S, MOD_NONE)]                = ACTION_CAM_BACKWARD;
@@ -52,10 +54,15 @@ KeyboardBindings::KeyboardBindings()
 
     mKeyPressMap[KeyModPair(GLFW_KEY_UP, GLFW_MOD_ALT)]           = ACTION_FAST_PROGRESSIVE_NEXT_MODE;
     mKeyPressMap[KeyModPair(GLFW_KEY_DOWN, GLFW_MOD_ALT)]         = ACTION_FAST_PROGRESSIVE_PREV_MODE;
+    mKeyPressMap[KeyModPair(GLFW_KEY_S, GLFW_MOD_ALT)]            = ACTION_WINDOW_TOGGLE_STATUS;
+    mKeyPressMap[KeyModPair(GLFW_KEY_X, GLFW_MOD_ALT)]            = ACTION_WINDOW_TOGGLE_EXPOSURE;
+    mKeyPressMap[KeyModPair(GLFW_KEY_Y, GLFW_MOD_ALT)]            = ACTION_WINDOW_TOGGLE_GAMMA;
     
     mKeyPressMap[KeyModPair(GLFW_KEY_S, GLFW_MOD_CONTROL)]        = ACTION_SAVE_IMAGE;
 
     // ---------------- Mouse mappings ------------------
+    mMousePressMap[KeyModPair(GLFW_MOUSE_BUTTON_MIDDLE, MOD_NONE)]         = ACTION_IMAGE2D_PAN;
+
     mMousePressMap[KeyModPair(GLFW_MOUSE_BUTTON_LEFT, GLFW_MOD_ALT)]       = ACTION_CAM_ORBIT;
     mMousePressMap[KeyModPair(GLFW_MOUSE_BUTTON_MIDDLE, GLFW_MOD_ALT)]     = ACTION_CAM_PAN;
     mMousePressMap[KeyModPair(GLFW_MOUSE_BUTTON_RIGHT, GLFW_MOD_ALT)]      = ACTION_CAM_DOLLY;

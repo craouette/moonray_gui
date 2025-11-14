@@ -3,11 +3,23 @@
 
 #pragma once
 
+#include "Component.h"
+#include "../../GuiTypes.h"
+#include "ImageDisplay.h"
+
+#include "imgui.h"
+
+#include <GLFW/glfw3.h>
 #include <memory>   // for std::unique_ptr
 
 namespace moonray_gui_v2 {
 
+class ExposureWindow;
+class GammaWindow;
 class ImageDisplay;
+class PixelInspector;
+class SceneInspector;
+class StatusBar;
 class Viewport;
 
 class Interface
@@ -26,18 +38,59 @@ public:
     // Sleep for the designated number of ms
     void sleep(const int milliseconds = 10);
 
+    // For the most part, Viewport will handle the key/mouse events (unless a 
+    // imgui window is in focus), but hotkeys for opening/closing windows will be handled here
+    bool handleKeyPressEvent(const Action action);
+
     // Resize the image display
     void resizeImage(const int width, const int height);
 
+    // Toggle open/closed windows
+    void toggleExposureWindow();
+    void toggleGammaWindow();
+    void togglePixelInspector();
+    void toggleSceneInspector();
+    void toggleStatusBar();
+
+    // Get the width/height of all docked ui components
+    // We need this to calculate the new viewport size when 
+    // docked components (i.e. ones that affect viewport size)
+    // are opened or closed
+    int getDockedComponentsWidth() const;
+    int getDockedComponentsHeight() const;
+
+    // Get the pixel currently underneath the mouse
+    ImVec2 getCurrentPixel() const;
+
+    // Zoom in/out or pan the image display
+    void zoom(const int xoffset, const int yoffset);
+    void pan(const int xoffset, const int yoffset);
+
 private:
+
+    // Resize the viewport, if necessary (usually because
+    // of stationary ui elements opening or closing)
+    void resizeViewport();    
+
     // Render the UI
     void render();
 
     // Create a new frame
     void newFrame();
 
-    Viewport* mViewport;                                        // pointer to the viewport manager
-    std::unique_ptr<ImageDisplay> mImageDisplay {nullptr};      // ptr to gui component displaying the rendered image
+    Viewport* mViewport {nullptr};                    // ptr to the viewport manager
+    std::unique_ptr<ExposureWindow> mExposureWindow;  // ptr to exposure adjustment window
+    std::unique_ptr<GammaWindow> mGammaWindow;        // ptr to gamma adjustment window
+    std::unique_ptr<ImageDisplay> mImageDisplay;      // ptr to gui component displaying the rendered image
+    std::unique_ptr<PixelInspector> mPixelInspector;  // ptr to pixel inspector window
+    std::unique_ptr<SceneInspector> mSceneInspector;  // ptr to scene inspector window
+    std::unique_ptr<StatusBar> mStatusBar;            // ptr to status bar
+
+    // UI Components
+    std::vector<Component*> mComponents;                        // ptrs to all components
+
+    int mDockedComponentsWidth {0};                             // width of the stationary ui components
+    int mDockedComponentsHeight {0};                            // height of the stationary ui components
 };
 
 } // namespace moonray_gui_v2

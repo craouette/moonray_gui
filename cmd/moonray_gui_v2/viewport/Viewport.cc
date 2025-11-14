@@ -43,14 +43,11 @@ static void glfw_error_callback(int error, const char* description)
 void 
 keyCallback(GLFWwindow* window, const int key, const int scancode, const int action, const int mods)
 {
-    // Only call our viewport's handler if the imgui UI doesn't need to capture the event
-    if (!ImGui::GetIO().WantCaptureKeyboard) {
-        // Get the Window instance from the user pointer
-        Viewport* viewportInstance = static_cast<Viewport*>(glfwGetWindowUserPointer(window));
-        if (viewportInstance) {
-            // Call the member function to handle the key press
-            viewportInstance->handleKeyEvent(key, scancode, action, mods);
-        }
+    // Get the Window instance from the user pointer
+    Viewport* viewportInstance = static_cast<Viewport*>(glfwGetWindowUserPointer(window));
+    if (viewportInstance) {
+        // Call the member function to handle the key press
+        viewportInstance->handleKeyEvent(key, scancode, action, mods);
     }
 }
 
@@ -80,6 +77,21 @@ mouseMoveCallback(GLFWwindow* window, const double xpos, const double ypos)
         if (viewportInstance) {
             // Call the member function to handle the key press
             viewportInstance->handleMouseMove(xpos, ypos);
+        }
+    }
+}
+
+void
+scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    // Only call our viewport's handler if the imgui UI
+    // doesn't need to capture the mouse event
+    if (!ImGui::GetIO().WantCaptureMouse) {
+        // Get the Viewport instance from the user pointer
+        Viewport* viewportInstance = static_cast<Viewport*>(glfwGetWindowUserPointer(window));
+        if (viewportInstance) {
+            // Call the member function to handle the key press
+            viewportInstance->handleScrollEvent(xoffset, yoffset);
         }
     }
 }
@@ -145,6 +157,7 @@ Viewport::Viewport(CameraType initialCamType,
     glfwSetKeyCallback(mGLFWWindow, keyCallback);
     glfwSetMouseButtonCallback(mGLFWWindow, mouseCallback);
     glfwSetCursorPosCallback(mGLFWWindow, mouseMoveCallback);
+    glfwSetScrollCallback(mGLFWWindow, scrollCallback);
 
     // Need to wait until we configure the GLFW window to
     // initialize the user interface
@@ -181,7 +194,6 @@ Viewport::exec()
     // Main loop
     while (!glfwWindowShouldClose(mGLFWWindow)) {
         // Poll and handle user events (key presses, window resize, etc.)
-        // First handle the viewport events, then pass to imgui
         glfwPollEvents();
 
         // If the window is minimized, we skip the rendering to save resources.
@@ -239,7 +251,11 @@ void Viewport::resize(const int width, const int height)
 
         if (!mInitialResizeDone) {
             // Resize the window to fit the image on the first resize only
-            glfwSetWindowSize(mGLFWWindow, width, height);
+            // The size of the viewport should initially be the size of the 
+            // render, plus room for any stationary ui elements
+            int vpWidth = width + mInterface->getDockedComponentsWidth();
+            int vpHeight = height + mInterface->getDockedComponentsHeight();
+            glfwSetWindowSize(mGLFWWindow, vpWidth, vpHeight);
             mInitialResizeDone = true;
         }
 
@@ -327,16 +343,6 @@ void Viewport::toggleDenoising() { mDenoiserManager->toggleDenoising(); }
 void Viewport::toggleDenoisingMode() { mDenoiserManager->toggleDenoisingMode(); }
 
 /// ---------------------------- Inspector Methods -------------------------------------- ///
-void
-Viewport::toggleInspectorMode()
-{
-    mInspectorMode = (mInspectorMode + 1) % NUM_INSPECTOR_MODES;
-    MNRY_ASSERT(mInspectorMode == INSPECT_NONE ||
-                mInspectorMode == INSPECT_LIGHT_CONTRIBUTIONS ||
-                mInspectorMode == INSPECT_GEOMETRY ||
-                mInspectorMode == INSPECT_GEOMETRY_PART ||
-                mInspectorMode == INSPECT_MATERIAL);
-}
 
 std::string
 Viewport::inspect(int x, int y) const
@@ -347,7 +353,7 @@ Viewport::inspect(int x, int y) const
     switch (mInspectorMode) {
     case INSPECT_LIGHT_CONTRIBUTIONS:
     {
-        std::string lightPickResults = "Light Pick Results: ";
+        std::string lightPickResults;
         moonray::shading::LightContribArray rdlLights;
         mRenderContext->handlePickLightContributions(x, y, rdlLights);
         std::sort(rdlLights.begin(), rdlLights.end(),
@@ -355,7 +361,7 @@ Viewport::inspect(int x, int y) const
                         return l0.second < l1.second;
                     });
         for (unsigned int i = 0; i < rdlLights.size(); ++i) {
-            lightPickResults += "\t" + rdlLights[i].first->getName() + ": " + std::to_string(rdlLights[i].second) + "";
+            lightPickResults += "" + rdlLights[i].first->getName() + ": " + std::to_string(rdlLights[i].second) + "\n";
         }
 
         return lightPickResults;
@@ -363,43 +369,57 @@ Viewport::inspect(int x, int y) const
     break;
     case INSPECT_GEOMETRY:
         {
-            std::string geometryPickResults = "Geometry Pick Results: ";
             const rdl2::Geometry *geometry = mRenderContext->handlePickGeometry(x, y);
-            if (geometry) {
-                geometryPickResults += "\t" + geometry->getName() + "";
-            }
-
-            return geometryPickResults;
+            if (geometry) { return geometry->getName() + ""; }
         }
         break;
     case INSPECT_GEOMETRY_PART:
         {
-            std::string geometryPartPickResults = "Geometry Part Pick Results: ";
             std::string parts;
             const rdl2::Geometry* geometry = mRenderContext->handlePickGeometryPart(x, y, parts);
-            if (geometry) {
-                geometryPartPickResults += "\t" + geometry->getName() + ", " + parts + "";
-            }
-
-            return geometryPartPickResults;
+            if (geometry) { return geometry->getName() + ", " + parts + ""; }
         }
         break;
     case INSPECT_MATERIAL:
         {
-            std::string materialPickResults = "Material Pick Results: ";
             const rdl2::Material *material = mRenderContext->handlePickMaterial(x, y);
-            if (material) {
-                materialPickResults += "\t" + material->getName() + "";
-            }
-
-            return materialPickResults;
+            if (material) { return material->getName() + ""; }
         }
         break;
     default: return "";
     }
 }
 
+scene_rdl2::math::Color 
+Viewport::getPixelColor(const int x, const int y) const
+{
+    // Bounds check
+    if (x < 0 || x >= mFramebufferWidth || y < 0 || y >= mFramebufferHeight) {
+        return scene_rdl2::math::Color(0.0f);
+    }
+
+    // Read directly from display framebuffer
+    // NOTE: This framebuffer data includes any color grading applied for display.
+    // If we want the raw render data, we would need to read from the renderer's framebuffer instead.
+    // However, reading from the renderer's framebuffer here could be problematic if
+    // the renderer is still writing to it (we would need to synchronize access)
+    // So for now, we read from the display framebuffer.
+    // TODO: Consider either reading from the renderer's framebuffer with proper synchronization,
+    // or reverse applying color grading to get the raw data.
+    if (mRgbBuffer) {
+        const auto& pixelColor = mRgbBuffer->getPixel(x, y);
+        return scene_rdl2::math::Color(pixelColor.r / 255.f, pixelColor.g / 255.f, pixelColor.b / 255.f);
+    }
+
+    // Fallback: No processed data available
+    std::cout << "No buffer available for pixel reading" << std::endl;
+    return scene_rdl2::math::Color(0.0f);
+}
+
 /// ---------------------------- Color Grading Methods -------------------------------------- ///
+
+void Viewport::toggleExposureWindow() { mInterface->toggleExposureWindow(); }
+void Viewport::toggleGammaWindow() { mInterface->toggleGammaWindow(); }
 
 void Viewport::startAdjustExposure() { mUpdateExposure = true; }
 void Viewport::startAdjustGamma() { mUpdateGamma = true; }
@@ -445,13 +465,24 @@ Viewport::nextRenderOutput()
     mRenderOutputIndex = scene_rdl2::math::clamp(mRenderOutputIndex + 1, -1, numOutputs - 1);
 }
 
+std::string 
+Viewport::getRenderOutputName() const 
+{
+    if (!mRenderContext) { return ""; }
+    if (mRenderOutputIndex == -1) { return "render buffer"; }
+
+    const moonray::rndr::RenderOutputDriver* roDriver = mRenderContext->getRenderOutputDriver();
+    if (!roDriver || mRenderOutputIndex >= roDriver->getNumberOfRenderOutputs() || mRenderOutputIndex < 0) {
+        return "";
+    }
+    return roDriver->getRenderOutput(mRenderOutputIndex)->getName();
+}
+
 /// ---------------------------- Key Press Event Handlers ----------------------------- ///
 
 void
-Viewport::handleKeyPressEvent(const int key, const int scancode, const int mods)
+Viewport::handleKeyPressEvent(const Action action)
 {
-    const Action action = mKeyboard->getKeyPressAction(mGLFWWindow, key, mods);
-
     if (mKeyboard->isCameraAction(action)) {
         getNavigationCam()->processKeyPressEvent(mGLFWWindow, action);
         return;
@@ -482,10 +513,12 @@ Viewport::handleKeyPressEvent(const int key, const int scancode, const int mods)
         case ACTION_EXPOSURE_RESET:                 resetExposure();                        mNeedsRefresh = true; break;
         case ACTION_GAMMA_RESET:                    resetGamma();                           mNeedsRefresh = true; break;
         case ACTION_OCIO_TOGGLE:                    toggleOCIO();                           mNeedsRefresh = true; break;
+
         // Fast progressive mode actions
         case ACTION_FAST_PROGRESSIVE_TOGGLE:        toggleFastProgressiveMode();            mNeedsRefresh = true; break;
         case ACTION_FAST_PROGRESSIVE_NEXT_MODE:     mFastMode = nextFastMode(mFastMode);    mNeedsRefresh = true; break;
         case ACTION_FAST_PROGRESSIVE_PREV_MODE:     mFastMode = prevFastMode(mFastMode);    mNeedsRefresh = true; break;
+
         // Misc actions
         case ACTION_SAVE_IMAGE:                     saveEXR(mRenderContext);                                      break;
         case ACTION_CAM_TOGGLE_ACTIVE_TYPE:         toggleActiveCameraType();               mNeedsRefresh = true; break;
@@ -498,28 +531,41 @@ Viewport::handleKeyPressEvent(const int key, const int scancode, const int mods)
 }
 
 void
-Viewport::handleKeyReleaseEvent(const int key, const int scancode, const int mods)
+Viewport::handleKeyReleaseEvent(const Action action)
 {
-    const Action action = mKeyboard->getKeyPressAction(mGLFWWindow, key, mods);
     getNavigationCam()->processKeyReleaseEvent(mGLFWWindow, action);
 }
 
 void
 Viewport::handleKeyEvent(const int key, const int scancode, const int type, const int mods)
 {
-    if (type == GLFW_PRESS) {
-        // key press handling
-        handleKeyPressEvent(key, scancode, mods);
-    } else if (type == GLFW_RELEASE) {
-        // key release handling
-        handleKeyReleaseEvent(key, scancode, mods);
+    const Action action = mKeyboard->getKeyPressAction(mGLFWWindow, key, mods);
+
+    // First, check if the interface wants to explicitly
+    // handle this action (currently, just for opening/closing windows)
+    // NOTE: We have automatic ImGui key handling enabled in the Interface,
+    //       so we don't need to explicitly handle any window interactions 
+    //       (ex: moving a slider) here.
+    if (type == GLFW_PRESS && mInterface->handleKeyPressEvent(action)) { return; }
+
+    // Otherwise, unless ImGui wants to automatically 
+    // capture this key event, this is a viewport-specific 
+    // action, and should be handled here
+    if (!ImGui::GetIO().WantCaptureKeyboard) {
+        if (type == GLFW_PRESS) {
+            // key press handling
+            handleKeyPressEvent(action); 
+        } else if (type == GLFW_RELEASE) {
+            // key release handling
+            handleKeyReleaseEvent(action);
+        }
     }
 }
 
 /// ---------------------------- Mouse Press Event Handlers ----------------------------- ///
 
 void
-Viewport::handleMousePressEvent(const int button, const int mods)
+Viewport::handleMousePressEvent(const Action action)
 {
     // Cache current cursor position for drag operations
     double cursorX, cursorY;
@@ -530,7 +576,6 @@ Viewport::handleMousePressEvent(const int button, const int mods)
     // Start timing for quick-click detection
     mMouseTimer.start();
 
-    const Action action = mKeyboard->getMousePressAction(mGLFWWindow, button, mods);
     if (mKeyboard->isCameraAction(action)) {
         getNavigationCam()->processMousePressEvent(mGLFWWindow, action);
         return;
@@ -539,14 +584,14 @@ Viewport::handleMousePressEvent(const int button, const int mods)
     switch (action) {
         case ACTION_EXPOSURE_ADJUST: startAdjustExposure(); break;
         case ACTION_GAMMA_ADJUST:    startAdjustGamma();    break;
+        case ACTION_IMAGE2D_PAN:     mPanImage = true;      break;
         default:                                            break;
     }
 }
 
 void 
-Viewport::handleMouseReleaseEvent(const int button, const int mods)
+Viewport::handleMouseReleaseEvent(const Action action)
 {
-    const Action action = mKeyboard->getMousePressAction(mGLFWWindow, button, mods);
     if (mKeyboard->isCameraAction(action)) {
         getNavigationCam()->processMouseReleaseEvent(mGLFWWindow, action);
         return;
@@ -567,7 +612,9 @@ Viewport::handleMouseReleaseEvent(const int button, const int mods)
             endAdjustGamma();
             mNeedsRefresh = true;
             break;
-            
+        case ACTION_IMAGE2D_PAN:
+            mPanImage = false;
+            break;
         default: 
             break;
     }
@@ -576,10 +623,12 @@ Viewport::handleMouseReleaseEvent(const int button, const int mods)
 void
 Viewport::handleMouseEvent(const int button, const int type, const int mods)
 {
+    const Action action = mKeyboard->getMousePressAction(mGLFWWindow, button, mods);
+
     if (type == GLFW_PRESS) {
-        handleMousePressEvent(button, mods);
+        handleMousePressEvent(action);
     } else if (type == GLFW_RELEASE) {
-        handleMouseReleaseEvent(button, mods);
+        handleMouseReleaseEvent(action);
     }
 }
 
@@ -588,27 +637,46 @@ void
 Viewport::handleMouseMove(const double xpos, const double ypos)
 {
     // Handle exposure/gamma adjustment by mouse drag
-    if (glfwGetMouseButton(mGLFWWindow, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+    if (mUpdateExposure) {
         const int currentPosX = static_cast<int>(xpos);
         const int deltaX = currentPosX - mMousePosX;
-        
-        if (mUpdateExposure) {
-            mExposure += 0.01f * deltaX;
-            mMousePosX = currentPosX;
-        }
-        
-        if (mUpdateGamma) {
-            mGamma += 0.005f * deltaX;
-            mGamma = std::max(mGamma, 0.1f); // Clamp minimum gamma
-            mMousePosX = currentPosX;
-        }
-        
-        if (mUpdateExposure || mUpdateGamma) {
-            mNeedsRefresh = true;
-        }
+
+        mExposure += 0.01f * deltaX;
+        mMousePosX = currentPosX;
+        mNeedsRefresh = true;
+
+    } else if (mUpdateGamma) {
+        const int currentPosX = static_cast<int>(xpos);
+        const int deltaX = currentPosX - mMousePosX;
+
+        mGamma += 0.005f * deltaX;
+        mGamma = std::max(mGamma, 0.1f); // Clamp minimum gamma
+        mMousePosX = currentPosX;
+        mNeedsRefresh = true;
+
+    } else if (mPanImage) {
+        int currentPosX = static_cast<int>(xpos);
+        int currentPosY = static_cast<int>(ypos);
+        mInterface->pan(currentPosX - mMousePosX, currentPosY - mMousePosY);
+        mMousePosX = currentPosX;
+        mMousePosY = currentPosY;
     }
 
     getNavigationCam()->processMouseMoveEvent(xpos, ypos);
 }
+
+void
+Viewport::handleScrollEvent(const double xoffset, const double yoffset)
+{
+    mInterface->zoom(xoffset, yoffset);
+}
+
+/// ----------------------------------- Getters ----------------------------------------- ///
+
+bool Viewport::getDenoisingEnabled() const { return mDenoiserManager->getDenoisingEnabled(); }
+
+moonray::denoiser::DenoiserMode Viewport::getDenoiserMode() const { return mDenoiserManager->getDenoiserMode(); }
+
+DenoisingBufferMode Viewport::getDenoisingBufferMode() const { return mDenoiserManager->getDenoisingBufferMode(); }
 
 } // namespace moonray_gui_v2

@@ -27,8 +27,15 @@ target_sources(${target}
         FileUtil.cc
         GuiTypes.cc
         RenderGui.cc
+
+        viewport/interface/ExposureWindow.cc
+        viewport/interface/GammaWindow.cc
         viewport/interface/Interface.cc
         viewport/interface/ImageDisplay.cc
+        viewport/interface/PixelInspector.cc
+        viewport/interface/SceneInspector.cc
+        viewport/interface/StatusBar.cc
+
         viewport/Keyboard.cc
         viewport/SnapshotManager.cc
         viewport/Viewport.cc

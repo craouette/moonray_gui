@@ -74,6 +74,15 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 | Next Mode | `ALT`+`UP` |
 | Previous Mode | `ALT`+`DOWN` |
 
+### Window Hotkeys
+| Action | Hotkey | Notes |
+| ------ | ------ | ----- |
+| Open/Close Pixel Inspector | `P` | new in v2 |
+| Open/Close Scene Inspector | `I` | now opens a window instead of printing info to console |
+| Open/Close Status Bar | `ALT` + `S` | new in v2 |
+| Open/Close Exposure Editor* | `ALT` + `X` | Previously `X` |
+| Open/Close Gamma Editor* | `ALT` + `Y` | Previously `Y` |
+
 ### Miscellaneous Hotkeys
 | Action | Hotkey | Notes |
 | ------ | ------ | ----- |
@@ -82,3 +91,4 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 | Save Image* | `CTRL`+`S` | Didn't exist in v1 |
 | Snapshot Take | `K` | |
 | Tile Progress Toggle* | `T` | Previously `P` |
+

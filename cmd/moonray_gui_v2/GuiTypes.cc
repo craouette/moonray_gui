@@ -53,10 +53,11 @@ std::string getActionName(const Action& action) {
     case ACTION_FAST_PROGRESSIVE_PREV_MODE:     return "Fast Progressive Previous Mode";
     case ACTION_WINDOW_TOGGLE_EXPOSURE:         return "Window Toggle Exposure";
     case ACTION_WINDOW_TOGGLE_GAMMA:            return "Window Toggle Gamma";
-    case ACTION_WINDOW_TOGGLE_INSPECTOR:        return "Window Toggle Inspector";
+    case ACTION_WINDOW_TOGGLE_SCENE_INSPECTOR:  return "Window Toggle Scene Inspector";
     case ACTION_WINDOW_TOGGLE_PATH_VISUALIZER:  return "Window Toggle Path Visualizer";
     case ACTION_WINDOW_TOGGLE_PIXEL_INSPECTOR:  return "Window Toggle Pixel Inspector";
     case ACTION_WINDOW_TOGGLE_SNAPSHOT:         return "Window Toggle Snapshot";
+    case ACTION_WINDOW_TOGGLE_STATUS:           return "Window Toggle Status";
     case ACTION_SAVE_IMAGE:                     return "Save Image";
     case ACTION_PICK_PATH_VISUALIZER_PIXEL:     return "Pick Path Visualizer Pixel";
     case ACTION_CAM_TOGGLE_ACTIVE_TYPE:         return "Camera Toggle Active Type";

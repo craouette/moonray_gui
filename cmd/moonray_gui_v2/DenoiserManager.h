@@ -30,6 +30,15 @@ public:
     void denoiseFrame(scene_rdl2::fb_util::RenderBuffer *renderBuffer,
                       const moonray::rndr::RenderContext* renderContext);
 
+    // Gets whether denoising is enabled
+    bool getDenoisingEnabled() const { return mDenoise; }
+
+    // Gets which denoise mode is being used
+    DenoiserMode getDenoiserMode() const { return mDenoiserMode; }
+
+    // Gets which AOV buffers are being used for denoising
+    DenoisingBufferMode getDenoisingBufferMode() const { return mDenoisingBufferMode; }
+
 private:
     // Check if denoiser config has changed
     bool hasChanged(const DenoiserMode& mode, const int w, const int h, 

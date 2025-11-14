@@ -6,6 +6,7 @@
 #include "../GuiTypes.h"
 #include "MouseTimer.h"
 
+#include <mcrt_denoise/denoiser/Denoiser.h>
 #include <moonray/rendering/rndr/rndr.h>
 #include <scene_rdl2/common/math/Math.h>
 
@@ -45,6 +46,11 @@ public:
     void handleKeyEvent(int key, int scancode, int type, int mods);
     void handleMouseEvent(int button, int type, int mods);
     void handleMouseMove(double xpos, double ypos);
+    void handleScrollEvent(const double xoffset, const double yoffset);
+
+    // Inspects the current pixel, based on the current inspector mode
+    // and returns a string containing relevant info
+    std::string inspect(const int x, const int y) const;
     
     // -------------------------------------- Getters --------------------------------------- //
     // Checks if the GLFW window has been closed
@@ -102,6 +108,28 @@ public:
     // Gets the current render output index
     int getRenderOutputIndex() const { return mRenderOutputIndex; }
 
+    // Gets a human-readable name for the current render output
+    std::string getRenderOutputName() const;
+
+    // Getters for exposure and gamma pointers (for ImGui sliders)
+    float* getExposurePtr() { return &mExposure; }
+    float* getGammaPtr() { return &mGamma; }
+
+    // Get whether denoising is enabled
+    bool getDenoisingEnabled() const;
+
+    // Get the current denoiser mode
+    moonray::denoiser::DenoiserMode getDenoiserMode() const;
+
+    // Get the current denoising buffers used
+    DenoisingBufferMode getDenoisingBufferMode() const;
+
+    // Gets an editable pointer to the current scene inspector mode
+    int* getSceneInspectorModePtr() { return &mInspectorMode; }
+
+    // Gets the color of the pixel at the given pixel coordinates
+    scene_rdl2::math::Color getPixelColor(const int x, const int y) const;
+
     /// ---------------------------------- Setters ----------------------------------------- ///
     // Sets the render context for the cameras
     void setCameraRenderContext(RenderContext &context);
@@ -132,12 +160,12 @@ private:
     void resize(const int width, const int height);
 
     /// Keyboard event handlers
-    void handleKeyPressEvent(const int key, const int scancode, const int mods);
-    void handleKeyReleaseEvent(const int key, const int scancode, const int mods);
+    void handleKeyPressEvent(const Action action);
+    void handleKeyReleaseEvent(const Action action);
 
     /// Mouse event handlers
-    void handleMousePressEvent(const int button, const int mods);
-    void handleMouseReleaseEvent(const int button, const int mods);
+    void handleMousePressEvent(const Action action);
+    void handleMouseReleaseEvent(const Action action);
 
     /// ------------ Functions corresponding to hotkeys -------------- ///
     // Toggle active camera type (free or orbit)
@@ -152,12 +180,11 @@ private:
     // Toggles type of denoiser used
     void toggleDenoisingMode();
 
-    // Toggles what inspector mode to use
-    void toggleInspectorMode();
+    // Open/close exposure window
+    void toggleExposureWindow();
 
-    // Inspects the current pixel, based on the current inspector mode
-    // and returns a string containing relevant info
-    std::string inspect(const int x, const int y) const;
+    // Open/close gamma window
+    void toggleGammaWindow();
 
     // Start adjusting the exposure
     void startAdjustExposure();
@@ -207,7 +234,7 @@ private:
     RenderContext *mRenderContext {nullptr};                    // Pointer to the render context
 
     std::unique_ptr<SnapshotManager> mSnapshotManager;          // Ptr to manager for snapshot taking and saving
-    const std::unique_ptr<Keyboard> mKeyboard {};               // Ptr to keyboard binding information
+    const std::unique_ptr<Keyboard> mKeyboard {};               // Ptr to key/mouse binding information
     DenoiserManager* mDenoiserManager {nullptr};                // Ptr to denoiser manager
     
     // Frame data
@@ -242,6 +269,8 @@ private:
     int mMousePosX {0};                                         // x position of the mouse
     int mMousePosY {0};                                         // y position of the mouse
     MouseTimer mMouseTimer {};                                  // calculates time between clicks
+
+    bool mPanImage {false};                                     // is image panning active
 };
    
 } // namespace moonray_gui_v2
