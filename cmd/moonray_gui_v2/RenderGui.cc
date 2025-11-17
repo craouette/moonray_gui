@@ -8,6 +8,7 @@
 #include "Draw2D.h"
 #include "viewport/Viewport.h"
 
+#include <moonray/rendering/rndr/PathVisualizerManager.h>
 #include <moonray/rendering/rndr/RenderContextConsoleDriver.h>
 #include <moonray/rendering/rndr/RenderOutputDriver.h>
 
@@ -28,6 +29,10 @@ RenderGui::updateFrame(scene_rdl2::fb_util::RenderBuffer *renderBuffer,
                        bool showProgress,
                        bool parallel)
 {
+    /// Don't update frame while we're running the visualizer simulation
+    const moonray::rndr::PathVisualizerManager* visualizer = mRenderContext->getPathVisualizerManager().get();
+    if (visualizer->isProcessing()) { return; }
+
     const DebugMode mode = mViewport->getDebugMode();
     const float exposure = mViewport->getExposure();
     const float gamma = mViewport->getGamma();
@@ -76,6 +81,10 @@ RenderGui::snapshotFrame(scene_rdl2::fb_util::RenderBuffer *renderBuffer,
                          scene_rdl2::fb_util::VariablePixelBuffer *renderOutputBuffer,
                          bool untile, bool parallel)
 {
+    // Don't snapshot frame while visualizer is gathering data
+    moonray::rndr::PathVisualizerManager* visualizer = mRenderContext->getPathVisualizerManager().get();
+    if (visualizer->isProcessing()) { return; }
+
     DebugMode mode = mViewport->getDebugMode();
 
     // Special case if debug mode is set to NUM_SAMPLES, in which case we want to display
@@ -195,6 +204,8 @@ RenderGui::updateProgressiveRendering()
     // RenderOutputDriver must exist to render a frame
     const auto *rod = mRenderContext->getRenderOutputDriver();
 
+    moonray::rndr::PathVisualizerManager* visualizer = mRenderContext->getPathVisualizerManager().get();
+
     // This block of code won't get executed on the first iteration after
     // beginInteractiveRendering is called but will be for all subsequent 
     // iterations.
@@ -252,11 +263,25 @@ RenderGui::updateProgressiveRendering()
     // anything displayed, or motion may be jerky.
     if (mLastSnapshotTimestamp >= mRenderTimestamp) {
 
+        // The user specified we should start the visualizer
+        if (visualizer->isInStartRecordState()) {
+
+            // If we're rendering, we need to stop in order to run the ray simulation
+            if (mRenderContext->isFrameRendering()) {
+                mRenderContext->stopFrame();
+                // If we stopped a rendering process, specify that we need
+                // to re-start it after running the visualizer
+                visualizer->setNeedsRenderRefresh(true);
+            }
+            visualizer->setRecordState();
+            mRenderContext->startFrame(/*simulationMode*/ true);
+        }
+        
         // Check if there have been any scene changes since the last render.
         // If so, we need to kick off a new rendering process.
         Mat4f cameraXform = updateNavigationCam(currentTime);
-
-        if (processSceneChanges(cameraXform)) {
+        SceneChangeFlags changeFlags = processSceneChanges(cameraXform);
+        if (changeFlags.any()) {
 
             // Stop the previous frame (if we were rendering one).
             if (mRenderContext->isFrameRendering()) {
@@ -276,6 +301,11 @@ RenderGui::updateProgressiveRendering()
 
             // Kick off a new frame with the updated camera/progressive mode
             mRenderContext->startFrame();
+
+            // if the camera changes, we need to re-generate the lines from the new camera perspective
+            if (changeFlags.mCamera && visualizer->isInDrawState()) {
+                visualizer->generateLines();
+            }
 
             // Update the tile progress rendering state.
             mOkToRenderTiles = false;
@@ -346,30 +376,34 @@ RenderGui::updateRealTimeRendering()
     return mRenderContext->isFrameRendering() ? mRenderTimestamp : 0;
 }
 
-bool 
+RenderGui::SceneChangeFlags
 RenderGui::processSceneChanges(const Mat4f& cameraXform)
 {
+    RenderGui::SceneChangeFlags flags;
     // Check if there have been any scene changes since the last render.
-    const bool cameraChanged = !math::isEqual(mLastCameraXform, cameraXform);
-    if (cameraChanged || (mMasterTimestamp != mRenderTimestamp)) { return true; }
+    flags.mCamera = !math::isEqual(mLastCameraXform, cameraXform);
+    flags.mTimestamp = (mMasterTimestamp != mRenderTimestamp);
+    if (flags.mCamera || flags.mTimestamp) { return flags; }
 
     // Check if the progressive mode changed
     moonray::rndr::RenderMode currentMode = mViewport->isFastProgressive() ?
         moonray::rndr::RenderMode::PROGRESSIVE_FAST :
         moonray::rndr::RenderMode::PROGRESSIVE;
     if (mRenderContext->getRenderMode() != currentMode) {
+        flags.mFastProgressiveActive = true;
         mRenderContext->setRenderMode(currentMode);
-        return true;
+        return flags;
     }
 
     // Check if the fast progressive mode changed
     moonray::rndr::FastRenderMode currentFastMode = mViewport->getFastMode();
     if (mRenderContext->getFastRenderMode() != currentFastMode) {
+        flags.mFastProgressiveMode = true;
         mRenderContext->setFastRenderMode(currentFastMode);
-        return true;
+        return flags;
     }
 
-    return false;
+    return flags;
 }
 
 void

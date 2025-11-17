@@ -64,11 +64,22 @@ public:
     moonray::rndr::FastRenderMode getFastRenderMode() const;
 
 private:
+    struct SceneChangeFlags {
+        bool mCamera {false};
+        bool mTimestamp {false};
+        bool mFastProgressiveActive {false};
+        bool mFastProgressiveMode {false};
+
+        bool any() const {
+            return mCamera || mTimestamp || mFastProgressiveActive || mFastProgressiveMode;
+        }
+    };
+
     uint32_t updateProgressiveRendering();
     uint32_t updateRealTimeRendering();
 
     // Process any scene changes and return true if the scene has changed
-    bool processSceneChanges(const scene_rdl2::math::Mat4f& cameraXform);
+    SceneChangeFlags processSceneChanges(const scene_rdl2::math::Mat4f& cameraXform);
 
     void computeCameraMotionXformOffset();
     void setCameraXform(const scene_rdl2::math::Mat4f& cameraXform);

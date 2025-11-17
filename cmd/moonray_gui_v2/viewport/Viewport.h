@@ -130,6 +130,11 @@ public:
     // Gets the color of the pixel at the given pixel coordinates
     scene_rdl2::math::Color getPixelColor(const int x, const int y) const;
 
+    // Get pointer to path visualizer manager
+    moonray::rndr::PathVisualizerManager* getPathVisualizerManager() const { 
+        return mRenderContext->getPathVisualizerManager().get(); 
+    };
+
     /// ---------------------------------- Setters ----------------------------------------- ///
     // Sets the render context for the cameras
     void setCameraRenderContext(RenderContext &context);
@@ -226,6 +231,9 @@ private:
     // Show the next/prev render output
     void prevRenderOutput();
     void nextRenderOutput();
+
+    // Select the pixel for the path visualizer
+    void setPathVisualizerPixel();
 
     /// ---------------------------------------------------------------///
 

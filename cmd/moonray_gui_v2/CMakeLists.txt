@@ -28,10 +28,12 @@ target_sources(${target}
         GuiTypes.cc
         RenderGui.cc
 
+        viewport/interface/DrawUtil.cc
         viewport/interface/ExposureWindow.cc
         viewport/interface/GammaWindow.cc
         viewport/interface/Interface.cc
         viewport/interface/ImageDisplay.cc
+        viewport/interface/PathVisualizerWindow.cc
         viewport/interface/PixelInspector.cc
         viewport/interface/SceneInspector.cc
         viewport/interface/StatusBar.cc

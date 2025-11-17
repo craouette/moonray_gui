@@ -7,6 +7,7 @@
 #include "ExposureWindow.h"
 #include "GammaWindow.h"
 #include "ImageDisplay.h"
+#include "PathVisualizerWindow.h"
 #include "PixelInspector.h"
 #include "SceneInspector.h"
 #include "StatusBar.h"
@@ -25,6 +26,7 @@ Interface::Interface(Viewport* viewport)
 , mExposureWindow(std::make_unique<ExposureWindow>())
 , mGammaWindow(std::make_unique<GammaWindow>())
 , mImageDisplay(std::make_unique<ImageDisplay>())
+, mPathVisualizerWindow(std::make_unique<PathVisualizerWindow>())
 , mPixelInspector(std::make_unique<PixelInspector>())
 , mSceneInspector(std::make_unique<SceneInspector>())
 , mStatusBar(std::make_unique<StatusBar>())
@@ -57,6 +59,7 @@ Interface::Interface(Viewport* viewport)
     // Add UI components here
     mComponents.push_back(mExposureWindow.get());
     mComponents.push_back(mGammaWindow.get());
+    mComponents.push_back(mPathVisualizerWindow.get());
     mComponents.push_back(mPixelInspector.get());
     mComponents.push_back(mSceneInspector.get());
     mComponents.push_back(mStatusBar.get());
@@ -73,11 +76,12 @@ bool
 Interface::handleKeyPressEvent(const Action action)
 {
     switch(action) {
-    case ACTION_WINDOW_TOGGLE_EXPOSURE:         toggleExposureWindow(); return true;
-    case ACTION_WINDOW_TOGGLE_GAMMA:            toggleGammaWindow();    return true;
-    case ACTION_WINDOW_TOGGLE_PIXEL_INSPECTOR:  togglePixelInspector(); return true;
-    case ACTION_WINDOW_TOGGLE_SCENE_INSPECTOR:  toggleSceneInspector(); return true;
-    case ACTION_WINDOW_TOGGLE_STATUS:           toggleStatusBar();      return true;
+    case ACTION_WINDOW_TOGGLE_EXPOSURE:         toggleExposureWindow();         return true;
+    case ACTION_WINDOW_TOGGLE_GAMMA:            toggleGammaWindow();            return true;
+    case ACTION_WINDOW_TOGGLE_PATH_VISUALIZER:  togglePathVisualizerWindow();   return true;
+    case ACTION_WINDOW_TOGGLE_PIXEL_INSPECTOR:  togglePixelInspector();         return true;
+    case ACTION_WINDOW_TOGGLE_SCENE_INSPECTOR:  toggleSceneInspector();         return true;
+    case ACTION_WINDOW_TOGGLE_STATUS:           toggleStatusBar();              return true;
     default: break;
     }
     return false;
@@ -101,13 +105,12 @@ Interface::draw()
     resizeViewport();
 
     // Get how much space is available for the image display
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const int availWidth = viewport->Size.x - mDockedComponentsWidth;
-    const int availHeight = viewport->Size.y - mDockedComponentsHeight;
+    ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
+    const int availWidth = imguiViewport->Size.x - mDockedComponentsWidth;
+    const int availHeight = imguiViewport->Size.y - mDockedComponentsHeight;
   
     // Draw the image
-    const int textureHandle = mViewport->getFramebufferTexture();
-    mImageDisplay->draw(textureHandle, availWidth, availHeight);
+    mImageDisplay->draw(mViewport, availWidth, availHeight);
 
     render();
 }
@@ -211,6 +214,7 @@ Interface::resizeViewport()
 
 void Interface::toggleExposureWindow() { mExposureWindow->toggle(); }
 void Interface::toggleGammaWindow() { mGammaWindow->toggle(); }
+void Interface::togglePathVisualizerWindow() { mPathVisualizerWindow->toggle(); }
 void Interface::togglePixelInspector() { mPixelInspector->toggle(); }
 void Interface::toggleSceneInspector() { mSceneInspector->toggle(); }
 void Interface::toggleStatusBar() { mStatusBar->toggle(); }
@@ -223,7 +227,7 @@ Interface::getCurrentPixel() const
     const int mousePosX = io.MousePos.x;
     const int mousePosY = io.MousePos.y;
 
-    return mImageDisplay->getPixel(mousePosX, mousePosY);
+    return mImageDisplay->viewportToImageCoords(mousePosX, mousePosY);
 }
 
 void

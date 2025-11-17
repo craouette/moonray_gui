@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "ImageDisplay.h"
+#include "../Viewport.h"
+
+#include <moonray/rendering/rndr/PathVisualizerManager.h>
 
 #include <cmath>
 
@@ -19,8 +22,10 @@ ImageDisplay::getCenteredPosition(const int availWidth, const int availHeight) c
 }
 
 void
-ImageDisplay::draw(const GLuint textureHandle, const int availWidth, const int availHeight)
+ImageDisplay::draw(const Viewport* viewport, const int availWidth, const int availHeight)
 {
+    const int textureHandle = viewport->getFramebufferTexture();
+
     // Only show if we have valid data
     if (textureHandle == 0 || mImageSize.x <= 0 || mImageSize.y <= 0 || availWidth <= 0 || availHeight <= 0) {
         return;
@@ -57,33 +62,104 @@ ImageDisplay::draw(const GLuint textureHandle, const int availWidth, const int a
         
         // Draw the image (Note that ImGui uses top-left origin for UVs, OpenGL uses bottom-left)
         ImGui::Image((ImTextureID)(intptr_t)textureHandle, getScaledSize(), ImVec2(0, 1), ImVec2(1, 0));
+
+        /// Draw path visualizer lines on top of the image
+        moonray::rndr::PathVisualizerManager* manager = viewport->getPathVisualizerManager();
+        drawPathVisualizerLines(manager);
     }
     ImGui::End();
     ImGui::PopStyleVar(2); 
 }
 
-ImVec2
-ImageDisplay::getPixel(int mousePosX, int mousePosY) const
+// -------------------------------------- Path Visualizer Line Drawing ---------------------------------------------- //
+
+void
+ImageDisplay::drawLine(const int x1, const int y1, const int x2, const int y2, const scene_rdl2::math::Color& color, 
+                       const float a, const float w, const bool drawEndPoint)
 {
-    const ImVec2 imageSize = getScaledSize();
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+    // Given the pixel coordinates, convert to viewport coordinates for drawing
+    const ImVec2 start = imageToViewportCoords(x1, y1);
+    const ImVec2 end = imageToViewportCoords(x2, y2);
+
+    ImU32 lineColor = IM_COL32(color.r * 255.f, color.g * 255.f, color.b * 255.f, a * 255.f);
+    drawList->AddLine(start, end, lineColor, w);
+
+    if (drawEndPoint) {
+        drawList->AddCircleFilled(end, w + 3, lineColor, /*circle segments*/ 16);
+    }
+}
+
+void 
+ImageDisplay::drawPathVisualizerLines(moonray::rndr::PathVisualizerManager* manager)
+{
+    // If the manager doesn't exist or is turned off, nothing to draw
+    if (!manager || !manager->isOn()) { return; }
+
+    // Get the scaled image size to account for zoom in/out
+    const ImVec2 size = getScaledSize();
+    
+    auto lineDrawingCallback = [manager, this, size](const int x1, const int y1, const int x2, const int y2, 
+            const uint8_t& flags, const float a, const float w, const bool drawEndPoint) {
+
+        // Manager could have been deleted since we set up the callback
+        if (!manager) { return; }
+
+        // Check if the line should be visible based on user settings
+        if (!manager->showRay(flags)) { return; }
+
+        drawLine(x1, y1, x2, y2, manager->getColorByFlags(flags), a, w, drawEndPoint);
+    };
+    manager->crawlAllLines(lineDrawingCallback);
+}
+
+// ------------------------------ Image <--> Viewport coordinate conversions ---------------------------------------- //
+ImVec2
+ImageDisplay::viewportToImageCoords(const int viewportPosX, const int viewportPosY) const
+{
+    const ImVec2 scaledImageSize = getScaledSize();
+    ImVec2 imagePos = ImVec2(viewportPosX, viewportPosY);
 
     // Offset by the image position
-    // to put mousePos in image coordinates
-    mousePosX -= mPosition.x;
-    mousePosY -= mPosition.y;
+    // to put viewportPos in image coordinates
+    imagePos.x -= mPosition.x;
+    imagePos.y -= mPosition.y;
 
-    if (mousePosX >= 0 && mousePosY >= 0 && mousePosX < imageSize.x && mousePosY < imageSize.y) {
-        // Adjust mouse pos to account for difference between texture size and ui size
-        // i.e. if the ui is scaled up, we need to scale the mouse pos down to get the correct pixel
-        // Also, since the pixel coord is the center of the pixel, we need to subtract 0.5
-        // to get the top left corner of the pixel before scaling
-        mousePosX = std::floor((mousePosX - 0.5f) * (1.f/mZoomScale));
-        mousePosY = std::floor((mousePosY - 0.5f) * (1.f/mZoomScale));
-        return ImVec2(mousePosX, mImageSize.y - 1 - mousePosY);
+    if (imagePos.x >= 0 && imagePos.y >= 0 && imagePos.x < scaledImageSize.x && imagePos.y < scaledImageSize.y) {
+        // Adjust position to account for difference between framebuffer size and image display size
+        // i.e. if the image is scaled up in the viewport, we need to scale the position down to get 
+        // the correct pixel. Also, since the pixel coord is the center of the pixel, we need to 
+        // subtract 0.5 to get the top left corner of the pixel before scaling
+        imagePos.x = std::floor((imagePos.x - 0.5f) * (1.f/mZoomScale));
+        imagePos.y = std::floor((imagePos.y - 0.5f) * (1.f/mZoomScale));
+
+        // Finally, we need to flip the y coordinate since our pixel coords have 
+        // origin at bottom left but the imgui uses top left origin for viewport coords
+        return ImVec2(imagePos.x, mImageSize.y - 1 - imagePos.y);
     }
     return ImVec2(-1, -1);
 }
 
+ImVec2
+ImageDisplay::imageToViewportCoords(const int pixelX, const int pixelY) const
+{
+    // Scale pixel coordinates by the image zoom factor
+    int viewportPosX = static_cast<int>(pixelX * mZoomScale);
+    // Have to flip the y coordinate since our pixel coords have origin at bottom left
+    // but viewport coords with imgui have origin at top left
+    int viewportPosY = static_cast<int>((mImageSize.y - 1 - pixelY) * mZoomScale);
+
+    // Offset by the image position to get viewport coordinates
+    viewportPosX += static_cast<int>(mPosition.x);
+    viewportPosY += static_cast<int>(mPosition.y);
+
+    // NOTE: We do not need to check for out of bounds here, since
+    // imgui will handle that internally.
+    return ImVec2(viewportPosX, viewportPosY);
+}
+
+// -------------------------------------------- Zooming and Panning ------------------------------------------------- //
 void
 ImageDisplay::zoom(const int xoffset, const int yoffset)
 {

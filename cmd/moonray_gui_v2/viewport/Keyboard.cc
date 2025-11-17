@@ -38,6 +38,7 @@ KeyboardBindings::KeyboardBindings()
     mKeyPressMap[KeyModPair(GLFW_KEY_S, MOD_NONE)]                = ACTION_CAM_BACKWARD;
     mKeyPressMap[KeyModPair(GLFW_KEY_T, MOD_NONE)]                = ACTION_TILE_PROGRESS_TOGGLE;
     mKeyPressMap[KeyModPair(GLFW_KEY_U, MOD_NONE)]                = ACTION_CAM_SET_UP_VECTOR;
+    mKeyPressMap[KeyModPair(GLFW_KEY_V, MOD_NONE)]                = ACTION_WINDOW_TOGGLE_PATH_VISUALIZER;
     mKeyPressMap[KeyModPair(GLFW_KEY_W, MOD_NONE)]                = ACTION_CAM_FORWARD;
     mKeyPressMap[KeyModPair(GLFW_KEY_Z, MOD_NONE)]                = ACTION_OCIO_TOGGLE;
 
@@ -61,6 +62,7 @@ KeyboardBindings::KeyboardBindings()
     mKeyPressMap[KeyModPair(GLFW_KEY_S, GLFW_MOD_CONTROL)]        = ACTION_SAVE_IMAGE;
 
     // ---------------- Mouse mappings ------------------
+    mMousePressMap[KeyModPair(GLFW_MOUSE_BUTTON_LEFT, MOD_NONE)]           = ACTION_PICK_PATH_VISUALIZER_PIXEL;
     mMousePressMap[KeyModPair(GLFW_MOUSE_BUTTON_MIDDLE, MOD_NONE)]         = ACTION_IMAGE2D_PAN;
 
     mMousePressMap[KeyModPair(GLFW_MOUSE_BUTTON_LEFT, GLFW_MOD_ALT)]       = ACTION_CAM_ORBIT;

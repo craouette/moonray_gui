@@ -12,6 +12,7 @@
 #include "Keyboard.h"
 #include "SnapshotManager.h"
 
+#include <moonray/rendering/rndr/PathVisualizerManager.h>
 #include <moonray/rendering/rndr/RenderOutputDriver.h>
 
 #include <GLFW/glfw3.h>
@@ -386,8 +387,9 @@ Viewport::inspect(int x, int y) const
             if (material) { return material->getName() + ""; }
         }
         break;
-    default: return "";
     }
+
+    return "";
 }
 
 scene_rdl2::math::Color 
@@ -476,6 +478,19 @@ Viewport::getRenderOutputName() const
         return "";
     }
     return roDriver->getRenderOutput(mRenderOutputIndex)->getName();
+}
+
+void
+Viewport::setPathVisualizerPixel()
+{
+    moonray::rndr::PathVisualizerManager* manager = getPathVisualizerManager();
+    if (manager && manager->isOn()) {
+        const ImVec2 pixel = mInterface->getCurrentPixel();
+
+        if (pixel.x >= 0 && pixel.y >= 0) {
+            manager->setPixel(pixel.x, pixel.y, /*update*/ true);
+        }
+    }
 }
 
 /// ---------------------------- Key Press Event Handlers ----------------------------- ///
@@ -582,10 +597,11 @@ Viewport::handleMousePressEvent(const Action action)
     }
 
     switch (action) {
-        case ACTION_EXPOSURE_ADJUST: startAdjustExposure(); break;
-        case ACTION_GAMMA_ADJUST:    startAdjustGamma();    break;
-        case ACTION_IMAGE2D_PAN:     mPanImage = true;      break;
-        default:                                            break;
+        case ACTION_EXPOSURE_ADJUST:                startAdjustExposure();      break;
+        case ACTION_GAMMA_ADJUST:                   startAdjustGamma();         break;
+        case ACTION_IMAGE2D_PAN:                    mPanImage = true;           break;
+        case ACTION_PICK_PATH_VISUALIZER_PIXEL:     setPathVisualizerPixel();   break;
+        default:                                                                break;
     }
 }
 

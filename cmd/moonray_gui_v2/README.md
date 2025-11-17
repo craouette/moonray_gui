@@ -82,6 +82,7 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 | Open/Close Status Bar | `ALT` + `S` | new in v2 |
 | Open/Close Exposure Editor* | `ALT` + `X` | Previously `X` |
 | Open/Close Gamma Editor* | `ALT` + `Y` | Previously `Y` |
+| Open/Close Path Visualizer | `V` | |
 
 ### Miscellaneous Hotkeys
 | Action | Hotkey | Notes |

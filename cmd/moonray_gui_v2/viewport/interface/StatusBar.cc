@@ -39,17 +39,17 @@ StatusBar::draw(Viewport* viewport, const ImVec2& currentPixel)
 
         ImGui::Text("(%d, %d)", currentPixelX, currentPixelY);
         ImGui::SameLine(0.0f, 15.0f);
-        ImGui::Text(getDebugModeStr(viewport->getDebugMode()).c_str());
+        ImGui::Text("%s", getDebugModeStr(viewport->getDebugMode()).c_str());
         ImGui::SameLine(0.0f, 15.0f);
-        ImGui::Text(getFastProgressiveModeStr(viewport->isFastProgressive(), viewport->getFastMode()).c_str());
+        ImGui::Text("%s", getFastProgressiveModeStr(viewport->isFastProgressive(), viewport->getFastMode()).c_str());
         ImGui::SameLine(0.0f, 15.0f);
-        ImGui::Text(getDenoiseModeStr(viewport->getDenoisingEnabled(), viewport->getDenoiserMode()).c_str());
+        ImGui::Text("%s", getDenoiseModeStr(viewport->getDenoisingEnabled(), viewport->getDenoiserMode()).c_str());
         ImGui::SameLine(0.0f, 5.0f);
-        ImGui::Text(getDenoiseBufferStr(viewport->getDenoisingEnabled(), viewport->getDenoisingBufferMode()).c_str());
+        ImGui::Text("%s", getDenoiseBufferStr(viewport->getDenoisingEnabled(), viewport->getDenoisingBufferMode()).c_str());
         ImGui::SameLine(0.0f, 15.0f);
-        ImGui::Text(getCameraTypeStr(viewport->getActiveCameraType()).c_str());
+        ImGui::Text("%s", getCameraTypeStr(viewport->getActiveCameraType()).c_str());
         ImGui::SameLine(0.0f, 15.0f);
-        ImGui::Text(getRenderOutputStr(viewport->getRenderOutputName()).c_str());
+        ImGui::Text("%s", getRenderOutputStr(viewport->getRenderOutputName()).c_str());
         ImGui::End();
         ImGui::PopStyleVar();
     }

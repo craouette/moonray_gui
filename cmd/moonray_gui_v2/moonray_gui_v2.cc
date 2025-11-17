@@ -8,6 +8,7 @@
 
 #include <moonray/application/ChangeWatcher.h>
 #include <moonray/application/RaasApplication.h>
+#include <moonray/rendering/rndr/PathVisualizerManager.h>
 #include <scene_rdl2/render/util/Args.h>
 #include <scene_rdl2/scene/rdl2/Camera.h>
 
@@ -196,6 +197,8 @@ RaasGuiApplication::startRenderThread(void* me)
 
             std::set<std::string> changedDeltaFiles;
 
+            moonray::rndr::PathVisualizerManager* visualizer = renderContext->getPathVisualizerManager().get();
+
             while (!self->mViewport->isWindowClosed()) {
 
                 // Execute startFrame() if renderContext has forceCallStartFrame condition
@@ -235,6 +238,32 @@ RaasGuiApplication::startRenderThread(void* me)
 
                 } else {
                     bool frameComplete = false;
+
+                    // when the visualizer is done recording ray info, we need to stop the frame,
+                    // if necessary, then request that drawing begin
+                    if (visualizer->isInStopRecordState()) {
+                        if (renderContext->isFrameRendering()) {
+                            renderContext->stopFrame(/*simulationMode*/ true);
+                        }
+                        /// TODO: By calling startFrame here, it ensures that, even
+                        /// if rendering is complete, it will force a full render
+                        /// restart. Ideally, if we are finished rendering, we would only
+                        /// run the simulation (see moonray::RenderContext::forceCameraUpdates())
+                        /// TODO: Also, ideally we wouldn't do heavy renderPrep work inside the event loop
+                        renderContext->startFrame();
+                        visualizer->generateLines();
+
+                        /// TODO: This section could be improved for efficiency. This conditional section will rarely
+                        /// (if ever) be entered because the first snapshot likely will not be ready before
+                        /// generateLines is complete. However, we do want to take a snapshot as soon as possible.
+                        if (renderContext->isFrameReadyForDisplay()) {
+                            const bool parallel = renderContext->getRenderMode() == moonray::rndr::RenderMode::REALTIME;
+                            self->mRenderGui->snapshotFrame(&outputBuffer, &heatMapBuffer, &weightBuffer, 
+                                                            &renderBufferOdd, &renderOutputBuffer,
+                                                            true, parallel);
+                            self->mRenderGui->updateFrame(&outputBuffer, &renderOutputBuffer, false, parallel);
+                        }
+                    }
 
                     if (currFrameTimestamp > prevFrameTimestamp) {
                         // We've hit a brand new frame, do any new frame logic here...

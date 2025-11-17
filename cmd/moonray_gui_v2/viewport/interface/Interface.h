@@ -17,6 +17,7 @@ namespace moonray_gui_v2 {
 class ExposureWindow;
 class GammaWindow;
 class ImageDisplay;
+class PathVisualizerWindow;
 class PixelInspector;
 class SceneInspector;
 class StatusBar;
@@ -48,6 +49,7 @@ public:
     // Toggle open/closed windows
     void toggleExposureWindow();
     void toggleGammaWindow();
+    void togglePathVisualizerWindow();
     void togglePixelInspector();
     void toggleSceneInspector();
     void toggleStatusBar();
@@ -78,13 +80,14 @@ private:
     // Create a new frame
     void newFrame();
 
-    Viewport* mViewport {nullptr};                    // ptr to the viewport manager
-    std::unique_ptr<ExposureWindow> mExposureWindow;  // ptr to exposure adjustment window
-    std::unique_ptr<GammaWindow> mGammaWindow;        // ptr to gamma adjustment window
-    std::unique_ptr<ImageDisplay> mImageDisplay;      // ptr to gui component displaying the rendered image
-    std::unique_ptr<PixelInspector> mPixelInspector;  // ptr to pixel inspector window
-    std::unique_ptr<SceneInspector> mSceneInspector;  // ptr to scene inspector window
-    std::unique_ptr<StatusBar> mStatusBar;            // ptr to status bar
+    Viewport* mViewport {nullptr};                               // ptr to the viewport manager
+    std::unique_ptr<ExposureWindow> mExposureWindow;             // ptr to exposure adjustment window
+    std::unique_ptr<GammaWindow> mGammaWindow;                   // ptr to gamma adjustment window
+    std::unique_ptr<ImageDisplay> mImageDisplay;                 // ptr to gui component displaying the rendered image
+    std::unique_ptr<PathVisualizerWindow> mPathVisualizerWindow; // ptr to path visualizer window
+    std::unique_ptr<PixelInspector> mPixelInspector;             // ptr to pixel inspector window
+    std::unique_ptr<SceneInspector> mSceneInspector;             // ptr to scene inspector window
+    std::unique_ptr<StatusBar> mStatusBar;                       // ptr to status bar
 
     // UI Components
     std::vector<Component*> mComponents;                        // ptrs to all components

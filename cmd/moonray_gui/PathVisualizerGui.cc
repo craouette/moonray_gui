@@ -207,10 +207,10 @@ void PathVisualizerGui::setupVisibilityUI(QGridLayout* layout)
     QCheckBox* bsdfSamplesOn = new QCheckBox("Bsdf samples", this);
     QCheckBox* lightSamplesOn = new QCheckBox("Light samples", this);
 
-    specularRaysOn->setCheckState(mPathVisualizerManager->getSpecularRaysFlag() ? Qt::Checked : Qt::Unchecked);
-    diffuseRaysOn->setCheckState(mPathVisualizerManager->getDiffuseRaysFlag() ? Qt::Checked : Qt::Unchecked);
-    bsdfSamplesOn->setCheckState(mPathVisualizerManager->getBsdfSamplesFlag() ? Qt::Checked : Qt::Unchecked);
-    lightSamplesOn->setCheckState(mPathVisualizerManager->getLightSamplesFlag() ? Qt::Checked : Qt::Unchecked);
+    specularRaysOn->setCheckState(mPathVisualizerManager->getShowSpecularRays() ? Qt::Checked : Qt::Unchecked);
+    diffuseRaysOn->setCheckState(mPathVisualizerManager->getShowDiffuseRays() ? Qt::Checked : Qt::Unchecked);
+    bsdfSamplesOn->setCheckState(mPathVisualizerManager->getShowBsdfSamples() ? Qt::Checked : Qt::Unchecked);
+    lightSamplesOn->setCheckState(mPathVisualizerManager->getShowLightSamples() ? Qt::Checked : Qt::Unchecked);
 
     specularRaysOn->setCursor(Qt::PointingHandCursor);
     diffuseRaysOn->setCursor(Qt::PointingHandCursor);
@@ -389,28 +389,28 @@ PathVisualizerGui::slot_processMaxDepth(const int depth)
 void
 PathVisualizerGui::slot_processDiffuseRayFlag(const int flag)
 {
-    mPathVisualizerManager->setDiffuseRaysFlag(static_cast<bool>(flag));
+    mPathVisualizerManager->setShowDiffuseRays(static_cast<bool>(flag));
     mPathVisualizerManager->startSimulation();
 }
 
 void
 PathVisualizerGui::slot_processSpecularRayFlag(const int flag)
 {
-    mPathVisualizerManager->setSpecularRaysFlag(static_cast<bool>(flag));
+    mPathVisualizerManager->setShowSpecularRays(static_cast<bool>(flag));
     mPathVisualizerManager->startSimulation();
 }
 
 void
 PathVisualizerGui::slot_processBsdfSampleFlag(const int flag)
 {
-    mPathVisualizerManager->setBsdfSamplesFlag(static_cast<bool>(flag));
+    mPathVisualizerManager->setShowBsdfSamples(static_cast<bool>(flag));
     mPathVisualizerManager->startSimulation();
 }
 
 void
 PathVisualizerGui::slot_processLightSampleFlag(const int flag)
 {
-    mPathVisualizerManager->setLightSamplesFlag(static_cast<bool>(flag));
+    mPathVisualizerManager->setShowLightSamples(static_cast<bool>(flag));
     mPathVisualizerManager->startSimulation();
 }
 
