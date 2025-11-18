@@ -15,7 +15,7 @@ GammaWindow::getCenteredPosition() const
 }
 
 void
-GammaWindow::draw(Viewport* viewport, const ImVec2& /*currentPixel*/)
+GammaWindow::draw(Viewport* viewport, const ImVec2& /*currentPixel*/, const ImVec2& /*dockOffset*/)
 {
     if (!mOpen) { return; }
 
@@ -26,10 +26,10 @@ GammaWindow::draw(Viewport* viewport, const ImVec2& /*currentPixel*/)
     ImGui::Begin("Gamma", &mOpen, ImGuiWindowFlags_NoResize);
     // Get ptr to the editable gamma amount
     float* gamma = viewport->getGammaPtr();
-    ImGui::SliderFloat("##Gamma", gamma, 0.1f, 5.0f);
+    ImGui::SliderFloat("##Gamma", gamma, mMinGamma, mMaxGamma);
 
     if (ImGui::Button("Reset")) {
-        *gamma = 1.0f;
+        *gamma = mGammaDefault;
     }
     ImGui::End();
 }

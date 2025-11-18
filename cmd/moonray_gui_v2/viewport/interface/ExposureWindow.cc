@@ -15,7 +15,7 @@ ExposureWindow::getCenteredPosition() const
 }
 
 void
-ExposureWindow::draw(Viewport* viewport, const ImVec2& /*currentPixel*/)
+ExposureWindow::draw(Viewport* viewport, const ImVec2& /*currentPixel*/, const ImVec2& /*dockOffset*/)
 {
     if (!mOpen) { return; }
 
@@ -26,10 +26,10 @@ ExposureWindow::draw(Viewport* viewport, const ImVec2& /*currentPixel*/)
     ImGui::Begin("Exposure", &mOpen, ImGuiWindowFlags_NoResize);
     // Get ptr to the editable exposure amount
     float* exposure = viewport->getExposurePtr();
-    ImGui::SliderFloat("##Exposure", exposure, -10.0f, 10.0f);
+    ImGui::SliderFloat("##Exposure", exposure, mMinExposure, mMaxExposure);
 
     if (ImGui::Button("Reset")) {
-        *exposure = 0.0f;
+        *exposure = mExposureDefault;
     }
     ImGui::End();
 }

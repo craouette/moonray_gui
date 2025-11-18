@@ -124,7 +124,7 @@ Viewport::Viewport(CameraType initialCamType,
                    const std::string& snapPath,
                    const bool showTileProgress,
                    DenoiserManager* denoiserManager)
-:   mSnapshotManager(std::make_unique<SnapshotManager>(snapPath))
+:   mSnapshotManager(std::make_unique<SnapshotManager>(snapPath, this))
 ,   mKeyboard(std::make_unique<Keyboard>())
 ,   mDenoiserManager(denoiserManager)
 ,   mActiveCameraType(initialCamType)
@@ -254,8 +254,8 @@ void Viewport::resize(const int width, const int height)
             // Resize the window to fit the image on the first resize only
             // The size of the viewport should initially be the size of the 
             // render, plus room for any stationary ui elements
-            int vpWidth = width + mInterface->getDockedComponentsWidth();
-            int vpHeight = height + mInterface->getDockedComponentsHeight();
+            int vpWidth = width + mInterface->getRightDockWidth();
+            int vpHeight = height + mInterface->getBottomDockHeight();
             glfwSetWindowSize(mGLFWWindow, vpWidth, vpHeight);
             mInitialResizeDone = true;
         }
@@ -278,6 +278,12 @@ Viewport::update(const fb_util::Rgb888Buffer* rgbBuffer)
 void
 Viewport::updateTexture(const int width, const int height, const unsigned char* pixelData)
 {
+    // Load existing snapshots on first frame update (deferred from constructor)
+    if (!mSnapshotsLoaded) {
+        mSnapshotManager->load();
+        mSnapshotsLoaded = true;
+    }
+
     // Delete previous texture if it exists
     if (mTextureHandle != 0) {
         glDeleteTextures(1, &mTextureHandle);
@@ -435,11 +441,11 @@ void Viewport::resetGamma() { mGamma = 1.f; }
 void Viewport::increaseExposure() { mExposure = math::floor(mExposure) + 1.f; }
 void Viewport::decreaseExposure() { mExposure = math::floor(mExposure) - 1.f; }
 
-void Viewport::toggleOCIO() { mUseOCIO = !mUseOCIO; }
-
 /// ------------------------------- Other Methods -------------------------------------- ///
 
 void Viewport::takeASnapshot() { mSnapshotManager->takeASnapshot(mRenderContext); }
+void Viewport::showPrevSnapshot() { mSnapshotManager->prev(); }
+void Viewport::showNextSnapshot() { mSnapshotManager->next(); }
 
 void Viewport::toggleShowTileProgress() { mShowTileProgress = !mShowTileProgress; }
 
@@ -527,7 +533,6 @@ Viewport::handleKeyPressEvent(const Action action)
         case ACTION_EXPOSURE_DECREASE:              decreaseExposure();                     mNeedsRefresh = true; break;
         case ACTION_EXPOSURE_RESET:                 resetExposure();                        mNeedsRefresh = true; break;
         case ACTION_GAMMA_RESET:                    resetGamma();                           mNeedsRefresh = true; break;
-        case ACTION_OCIO_TOGGLE:                    toggleOCIO();                           mNeedsRefresh = true; break;
 
         // Fast progressive mode actions
         case ACTION_FAST_PROGRESSIVE_TOGGLE:        toggleFastProgressiveMode();            mNeedsRefresh = true; break;
@@ -694,5 +699,20 @@ bool Viewport::getDenoisingEnabled() const { return mDenoiserManager->getDenoisi
 moonray::denoiser::DenoiserMode Viewport::getDenoiserMode() const { return mDenoiserManager->getDenoiserMode(); }
 
 DenoisingBufferMode Viewport::getDenoisingBufferMode() const { return mDenoiserManager->getDenoisingBufferMode(); }
+
+GLuint 
+Viewport::getDisplayTexture() const {
+    GLuint textureHandle = mTextureHandle;
+
+    // If a snapshot is chosen, return that texture instead
+    if (!mSnapshotManager) {
+        return textureHandle;
+    }
+    int snapshotTexture = mSnapshotManager->getChosenSnapshotTexture();
+    if (snapshotTexture != -1) {
+        textureHandle = snapshotTexture;
+    }
+    return textureHandle;
+}
 
 } // namespace moonray_gui_v2

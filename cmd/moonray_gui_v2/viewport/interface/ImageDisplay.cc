@@ -24,7 +24,7 @@ ImageDisplay::getCenteredPosition(const int availWidth, const int availHeight) c
 void
 ImageDisplay::draw(const Viewport* viewport, const int availWidth, const int availHeight)
 {
-    const int textureHandle = viewport->getFramebufferTexture();
+    const int textureHandle = viewport->getDisplayTexture();
 
     // Only show if we have valid data
     if (textureHandle == 0 || mImageSize.x <= 0 || mImageSize.y <= 0 || availWidth <= 0 || availHeight <= 0) {
@@ -83,7 +83,7 @@ ImageDisplay::drawLine(const int x1, const int y1, const int x2, const int y2, c
     const ImVec2 start = imageToViewportCoords(x1, y1);
     const ImVec2 end = imageToViewportCoords(x2, y2);
 
-    ImU32 lineColor = IM_COL32(color.r * 255.f, color.g * 255.f, color.b * 255.f, a * 255.f);
+    ImU32 lineColor = IM_COL32(color.r * 255, color.g * 255, color.b * 255, 255);
     drawList->AddLine(start, end, lineColor, w);
 
     if (drawEndPoint) {

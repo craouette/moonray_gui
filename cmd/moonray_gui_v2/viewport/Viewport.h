@@ -51,6 +51,10 @@ public:
     // Inspects the current pixel, based on the current inspector mode
     // and returns a string containing relevant info
     std::string inspect(const int x, const int y) const;
+
+    // Show previous/next snapshot
+    void showPrevSnapshot();
+    void showNextSnapshot();
     
     // -------------------------------------- Getters --------------------------------------- //
     // Checks if the GLFW window has been closed
@@ -61,9 +65,6 @@ public:
 
     // Gets gamma
     float getGamma() const { return mGamma; }
-
-    // Gets whether to use OCIO color management
-    bool getUseOCIO() const { return mUseOCIO; }
 
     // Gets current debug mode (i.e. channel being viewed)
     DebugMode getDebugMode() const { return mDebugMode; }
@@ -86,6 +87,9 @@ public:
 
     // Gets OpenGL texture handle for framebuffer
     GLuint getFramebufferTexture() const { return mTextureHandle; }
+
+    // Gets the texture to display (either framebuffer or snapshot)
+    GLuint getDisplayTexture() const;
 
     // Gets the GLFW window pointer
     GLFWwindow* getGLFWWindow() const { return mGLFWWindow; }
@@ -267,7 +271,6 @@ private:
     bool mUpdateGamma {false};                                  // is gamma being updated?
     float mExposure {0.f};                                      // current exposure value
     float mGamma {1.f};                                         // current gamma value
-    bool mUseOCIO {true};                                       // toggles on/off OCIO support
 
     int mRenderOutputIndex {0};                                 // Current render output index
     bool mProgressiveFast {false};                              // Whether fast progressive mode is on
@@ -279,6 +282,8 @@ private:
     MouseTimer mMouseTimer {};                                  // calculates time between clicks
 
     bool mPanImage {false};                                     // is image panning active
+
+    bool mSnapshotsLoaded {false};                              // have we loaded existing snapshots yet?
 };
    
 } // namespace moonray_gui_v2

@@ -22,10 +22,10 @@ class PixelInspector : public Component {
 //    (i.e. which pixel in the 5x5 grid)
 //
 public:
-    PixelInspector() : Component(/*isOpen*/ false, /*isDocked*/ false) {}
+    PixelInspector() : Component(/*isOpen*/ false) {}
     ~PixelInspector() override {}
 
-    void draw(Viewport* viewport, const ImVec2& currentPixel) override;
+    void draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset) override;
 
     int getWidth() const override { return mWidth; }
     int getHeight() const override { return mHeight; }
@@ -38,7 +38,7 @@ private:
                              const float textureWidth, const float textureHeight) const;
 
     // Set the initial position and size of the window when first opened
-    void setInitialWindowPositionAndSize();
+    void setInitialWindowPositionAndSize(const ImVec2& dockOffset);
 
     // Get the top-left and bottom-right corners in imgui window coordinates of a "pixel" in the subimage display.
     // The input is a subimage pixel coordinate, where (0,0) is the top-left pixel of the subimage.
@@ -57,8 +57,20 @@ private:
 
     int mSubimageWidth {5};         // # horizontal pixels in subimage
     int mSubimageHeight {5};        // # vertical pixels in subimage
+    int mSubimagePadding {15};      // amt of padding between the subimage and the edges of the window
+
     int mWidth {200};               // default width of window when first opened
-    int mHeight {200};              // default height of window when first opened
+    int mHeight {245};              // default height of window when first opened
+    int mPadding {20};              // amt of padding between the window and the edges of the viewport
+
+    ImVec4 mRedColor {ImVec4(1.f, 0.f, 0.f, 1.f)};                  // color to display the 'r' value
+    ImVec4 mGreenColor {ImVec4(0.0f, 1.0f, 0.0f, 1.0f)};            // color to display the 'g' value
+    ImVec4 mBlueColor {ImVec4(0.5f, 0.6f, 1.0f, 1.0f)};             // color to display the 'b' value
+
+    ImU32 mOOBColor {IM_COL32(0, 0, 0, 255)};                       // color for out-of-bounds pixels
+
+    ImU32 mPixelOutlineColor = {IM_COL32(255, 255, 255, 255)};      // color to outline the current pixel
+    float mPixelOutlineThickness {2.f};                             // thickness of the outline around the pixel
 };
 
 } // end namespace moonray_gui_v2

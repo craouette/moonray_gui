@@ -20,16 +20,14 @@ namespace moonray_gui_v2 {
 ///     - Name of the current render output
 class StatusBar : public Component {
 public:
-    StatusBar() : Component(/*isOpen*/ true, /*isDocked*/ true) {}
+    StatusBar() : Component(/*isOpen*/ true) {}
     ~StatusBar() override {}
 
     // Draws the status bar
-    void draw(Viewport* viewport, const ImVec2& currentPixel) override;
+    void draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset) override;
 
     int getWidth() const override { return -1; }  // -1 means auto-size to full width
     int getHeight() const override { return mHeight; }
-
-    bool isHorizontallyDocked() const override { return true; }
 
 private:
     // Get a display-able string representing the current debug mode
@@ -52,6 +50,10 @@ private:
     std::string getRenderOutputStr(const std::string& roName) const;
     
     int mHeight {20};               // Height of the bar
+    int mWindowPadding {2};
+
+    float mLargeSpace {15};         // large amt of horizontal spacing (to separate statuses)
+    float mSmallSpace {5};          // small amt of horizontal spacing (to separate sub-statuses)
 };
 
 } // end namespace moonray_gui_v2

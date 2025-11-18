@@ -22,14 +22,15 @@ PixelInspector::getSubimageUVCoords(ImVec2& uv0, ImVec2& uv1, const ImVec2& curr
 }
 
 void
-PixelInspector::setInitialWindowPositionAndSize()
+PixelInspector::setInitialWindowPositionAndSize(const ImVec2& dockOffset)
 {
     // Center the window in the viewport when first opened
     ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
     // Position at bottom right with some padding from edges
-    ImVec2 defaultPos = ImVec2(imguiViewport->Size.x - 5 - mWidth, imguiViewport->Size.y - 60 - mHeight);
-    ImGui::SetNextWindowPos(defaultPos, ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(mWidth, mHeight), ImGuiCond_Once);
+    ImVec2 defaultPos = ImVec2(imguiViewport->Size.x - dockOffset.x - mPadding - mWidth, 
+                               imguiViewport->Size.y - dockOffset.y - mPadding - mHeight);
+    ImGui::SetNextWindowPos(defaultPos, ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(mWidth, mHeight), ImGuiCond_Appearing);
 }
 
 void
@@ -53,7 +54,6 @@ PixelInspector::drawOutOfRangePixels(const ImVec2& imageDisplaySize, const ImVec
                                       const float textureWidth, const float textureHeight)
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
-    ImU32 blackColor = IM_COL32(0, 0, 0, 255);
 
     int halfSizeX = mSubimageWidth / 2;
     int halfSizeY = mSubimageHeight / 2;
@@ -70,7 +70,7 @@ PixelInspector::drawOutOfRangePixels(const ImVec2& imageDisplaySize, const ImVec
             if (pixelX < 0 || pixelX >= textureWidth || pixelY < 0 || pixelY >= textureHeight) {
                 ImVec2 rectMin, rectMax;
                 getSubimagePixelRect(rectMin, rectMax, ImVec2(i, j), imageDisplaySize);
-                drawList->AddRectFilled(rectMin, rectMax, blackColor);
+                drawList->AddRectFilled(rectMin, rectMax, mOOBColor);
             }
         }
     }
@@ -85,10 +85,8 @@ PixelInspector::drawOutlineAroundPixel(const ImVec2& imageDisplaySize)
     ImVec2 rectMin, rectMax;
     getSubimagePixelRect(rectMin, rectMax, ImVec2(2, 2), imageDisplaySize);
 
-    // Draw a white outline around the pixel
-    ImU32 outlineColor = IM_COL32(255, 255, 255, 255);
-    float outlineThickness = 2.0f;
-    drawList->AddRect(rectMin, rectMax, outlineColor, 0.0f, 0, outlineThickness);
+    // Draw a outline around the pixel
+    drawList->AddRect(rectMin, rectMax, mPixelOutlineColor, 0.0f, 0, mPixelOutlineThickness);
 }
 
 void
@@ -104,26 +102,26 @@ PixelInspector::drawColorValue(const scene_rdl2::math::Color& color)
     ImGui::Text("(");
     ImGui::SameLine(0,0);
 
-    drawColorText(color.r, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+    drawColorText(color.r, mRedColor);
 
     ImGui::SameLine(0,0);
     ImGui::Text(", ");
     ImGui::SameLine(0,0);
 
-    drawColorText(color.g, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+    drawColorText(color.g, mGreenColor);
     
     ImGui::SameLine(0,0);
     ImGui::Text(", ");
     ImGui::SameLine(0,0);
 
-    drawColorText(color.b, ImVec4(0.5f, 0.6f, 1.0f, 1.0f));
+    drawColorText(color.b, mBlueColor);
     ImGui::SameLine(0,0);
 
     ImGui::Text(")");
 }
 
 void
-PixelInspector::draw(Viewport* viewport, const ImVec2& currentPixel)
+PixelInspector::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset)
 {
     if (!mOpen) { return; }
 
@@ -134,14 +132,14 @@ PixelInspector::draw(Viewport* viewport, const ImVec2& currentPixel)
     ImVec2 uv0, uv1;
     getSubimageUVCoords(uv0, uv1, currentPixel, textureWidth, textureHeight);
 
-    // Size of the window to display the subimage (initial width/height minus some padding)
-    ImVec2 imageDisplaySize = ImVec2(mWidth - 30, mHeight - 30);
+    // Size of the window to display the subimage (initial widthxwidth minus some padding)
+    ImVec2 imageDisplaySize = ImVec2(mWidth - mSubimagePadding, mWidth - mSubimagePadding);
 
     // Set the default window position & size when first opened
-    setInitialWindowPositionAndSize();
+    setInitialWindowPositionAndSize(dockOffset);
 
     // ------------ Start of window creation ---------------
-    ImGui::Begin("Pixel Inspector", &mOpen, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Pixel Inspector", &mOpen);
 
     if (currentPixel.x >= 0 && currentPixel.y >= 0) {
         // Display the subimage

@@ -10,6 +10,7 @@
 #include "PathVisualizerWindow.h"
 #include "PixelInspector.h"
 #include "SceneInspector.h"
+#include "SnapshotWindow.h"
 #include "StatusBar.h"
 #include "../Viewport.h"
 
@@ -29,6 +30,7 @@ Interface::Interface(Viewport* viewport)
 , mPathVisualizerWindow(std::make_unique<PathVisualizerWindow>())
 , mPixelInspector(std::make_unique<PixelInspector>())
 , mSceneInspector(std::make_unique<SceneInspector>())
+, mSnapshotWindow(std::make_unique<SnapshotWindow>())
 , mStatusBar(std::make_unique<StatusBar>())
 {
     if (!viewport) {
@@ -62,7 +64,13 @@ Interface::Interface(Viewport* viewport)
     mComponents.push_back(mPathVisualizerWindow.get());
     mComponents.push_back(mPixelInspector.get());
     mComponents.push_back(mSceneInspector.get());
+    mComponents.push_back(mSnapshotWindow.get());
     mComponents.push_back(mStatusBar.get());
+
+    // Add components to docks (order matters)
+    mBottomDock.addComponent(mStatusBar.get());
+    mBottomDock.addComponent(mSnapshotWindow.get());
+    mRightDock.addComponent(mPathVisualizerWindow.get());
 }
 
 Interface::~Interface()
@@ -81,7 +89,10 @@ Interface::handleKeyPressEvent(const Action action)
     case ACTION_WINDOW_TOGGLE_PATH_VISUALIZER:  togglePathVisualizerWindow();   return true;
     case ACTION_WINDOW_TOGGLE_PIXEL_INSPECTOR:  togglePixelInspector();         return true;
     case ACTION_WINDOW_TOGGLE_SCENE_INSPECTOR:  toggleSceneInspector();         return true;
+    case ACTION_WINDOW_TOGGLE_SNAPSHOT:         toggleSnapshotWindow();         return true;
     case ACTION_WINDOW_TOGGLE_STATUS:           toggleStatusBar();              return true;
+    case ACTION_SNAPSHOT_PREV:                  mViewport->showPrevSnapshot();  return true;
+    case ACTION_SNAPSHOT_NEXT:                  mViewport->showNextSnapshot();  return true;
     default: break;
     }
     return false;
@@ -98,7 +109,11 @@ Interface::draw()
 
     // Draw all components
     for (Component* component : mComponents) {
-        component->draw(mViewport, currentPixel);
+        // Get dock offset for this component (widthOffset, heightOffset)
+        ImVec2 dockOffset(mRightDock.getOffset(component), 
+                          mBottomDock.getOffset(component));
+        // Draw the component
+        component->draw(mViewport, currentPixel, dockOffset);
     }
 
     // Resize the viewport if necessary
@@ -106,8 +121,8 @@ Interface::draw()
 
     // Get how much space is available for the image display
     ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
-    const int availWidth = imguiViewport->Size.x - mDockedComponentsWidth;
-    const int availHeight = imguiViewport->Size.y - mDockedComponentsHeight;
+    const int availWidth = imguiViewport->Size.x - mRightDock.getWidth();
+    const int availHeight = imguiViewport->Size.y - mBottomDock.getHeight();
   
     // Draw the image
     mImageDisplay->draw(mViewport, availWidth, availHeight);
@@ -143,37 +158,6 @@ Interface::sleep(int milliseconds)
 
 // --------------------------- Sizing/Resizing ---------------------------- ///
 
-int
-Interface::getDockedComponentsWidth() const
-{ 
-    int width = 0;
-    for (const auto& component : mComponents) {
-        if (component->isDocked() && component->isOpen()) {
-            // We don't care about horizontally docked components here
-            // since they don't affect viewport width.
-            if (!component->isHorizontallyDocked()) {
-                width += component->getWidth();
-            }
-        } 
-    } 
-    return width; 
-}
-int
-Interface::getDockedComponentsHeight() const
-{
-    int height = 0;
-    for (const auto& component : mComponents) {
-        if (component->isDocked() && component->isOpen()) {
-            // We don't care about vertically docked components here
-            // since they don't affect viewport height.
-            if (!component->isVerticallyDocked()) {
-                height += component->getHeight();
-            }
-        } 
-    } 
-    return height;
-}
-
 void
 Interface::resizeImage(const int width, const int height)
 {
@@ -191,21 +175,15 @@ Interface::resizeViewport()
         return;
     }
 
-    // Get the difference between the current width/height 
-    // of the docked components and the previous values
-    const int newDockedComponentsWidth = getDockedComponentsWidth();
-    const int newDockedComponentsHeight = getDockedComponentsHeight();
-    const int dockedComponentsWidthDiff = newDockedComponentsWidth - mDockedComponentsWidth;
-    const int dockedComponentsHeightDiff = newDockedComponentsHeight - mDockedComponentsHeight;
+    // Calculate the new dock size
+    mRightDock.updateWidth();
+    mBottomDock.updateHeight();
 
     // If there's a change, a docked component has been opened/closed
-    if (dockedComponentsWidthDiff != 0 || dockedComponentsHeightDiff != 0) {
-        mDockedComponentsWidth = newDockedComponentsWidth;
-        mDockedComponentsHeight = newDockedComponentsHeight;
-
+    if (mRightDock.hasChanged() || mBottomDock.hasChanged()) {
         // Update the viewport size
-        const int vpWidth = viewport->Size.x + dockedComponentsWidthDiff;
-        const int vpHeight = viewport->Size.y + dockedComponentsHeightDiff;
+        const int vpWidth = viewport->Size.x + mRightDock.getWidthDiff();
+        const int vpHeight = viewport->Size.y + mBottomDock.getHeightDiff();
         glfwSetWindowSize(mViewport->getGLFWWindow(), vpWidth, vpHeight);
     }
 }
@@ -217,6 +195,7 @@ void Interface::toggleGammaWindow() { mGammaWindow->toggle(); }
 void Interface::togglePathVisualizerWindow() { mPathVisualizerWindow->toggle(); }
 void Interface::togglePixelInspector() { mPixelInspector->toggle(); }
 void Interface::toggleSceneInspector() { mSceneInspector->toggle(); }
+void Interface::toggleSnapshotWindow() { mSnapshotWindow->toggle(); }
 void Interface::toggleStatusBar() { mStatusBar->toggle(); }
 
 /// ----------------------- Image Operations ---------------------------- ///

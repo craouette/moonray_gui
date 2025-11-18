@@ -34,9 +34,6 @@ RenderGui::updateFrame(scene_rdl2::fb_util::RenderBuffer *renderBuffer,
     if (visualizer->isProcessing()) { return; }
 
     const DebugMode mode = mViewport->getDebugMode();
-    const float exposure = mViewport->getExposure();
-    const float gamma = mViewport->getGamma();
-    const bool useOCIO = mViewport->getUseOCIO();
 
     // Apply denoising whilst frame is in linear HDR format.
     if (mode != NUM_SAMPLES && mRenderOutput < 0) { 

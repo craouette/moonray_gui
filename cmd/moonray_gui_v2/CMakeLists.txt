@@ -28,6 +28,7 @@ target_sources(${target}
         GuiTypes.cc
         RenderGui.cc
 
+        viewport/interface/Dock.cc
         viewport/interface/DrawUtil.cc
         viewport/interface/ExposureWindow.cc
         viewport/interface/GammaWindow.cc
@@ -36,6 +37,7 @@ target_sources(${target}
         viewport/interface/PathVisualizerWindow.cc
         viewport/interface/PixelInspector.cc
         viewport/interface/SceneInspector.cc
+        viewport/interface/SnapshotWindow.cc
         viewport/interface/StatusBar.cc
 
         viewport/Keyboard.cc

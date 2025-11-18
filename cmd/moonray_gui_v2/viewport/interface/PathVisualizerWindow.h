@@ -24,16 +24,14 @@ class PathVisualizerWindow : public Component {
  * the ImageDisplay class.
  */
     public:
-        PathVisualizerWindow() : Component(/*isOpen*/ false, /*isDocked*/ true) {}
+        PathVisualizerWindow() : Component(/*isOpen*/ false) {}
 
         ~PathVisualizerWindow() override {}
 
-        void draw(Viewport* viewport, const ImVec2& currentPixel) override;
+        void draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset) override;
 
         int getWidth() const override { return mWidth; }
         int getHeight() const override { return -1; } // auto-size height
-
-        bool isVerticallyDocked() const override { return true; }
 
     private:
         // Draw enable/disable button
@@ -48,6 +46,31 @@ class PathVisualizerWindow : public Component {
 
         moonray::rndr::PathVisualizerManager* mManager {nullptr};  // Pointer to the path visualizer manager
         int mWidth {250};                                          // Width of the window
+
+        // Slider limits
+        float mItemSpacing {8.f};
+        int mWindowPadding {10};
+
+        int mMinLineWidth {1};
+        int mMaxLineWidth {8};
+
+        int mMinMaxDepth {1};
+        int mMaxMaxDepth {20};
+
+        int mMinPixelSamples {1};
+        int mMaxPixelSamples {32};
+
+        int mMinLightSamples {1};
+        int mMaxLightSamples {32};
+
+        int mMinBsdfSamples {1};
+        int mMaxBsdfSamples {32};
+
+        int mMinPixelX {0};
+        int mMaxPixelX {1000000};
+
+        int mMinPixelY {0};
+        int mMaxPixelY {1000000};
 };
 
 } // end namespace moonray_gui_v2

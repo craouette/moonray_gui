@@ -40,11 +40,12 @@ KeyboardBindings::KeyboardBindings()
     mKeyPressMap[KeyModPair(GLFW_KEY_U, MOD_NONE)]                = ACTION_CAM_SET_UP_VECTOR;
     mKeyPressMap[KeyModPair(GLFW_KEY_V, MOD_NONE)]                = ACTION_WINDOW_TOGGLE_PATH_VISUALIZER;
     mKeyPressMap[KeyModPair(GLFW_KEY_W, MOD_NONE)]                = ACTION_CAM_FORWARD;
-    mKeyPressMap[KeyModPair(GLFW_KEY_Z, MOD_NONE)]                = ACTION_OCIO_TOGGLE;
 
     mKeyPressMap[KeyModPair(GLFW_KEY_PERIOD, MOD_NONE)]           = ACTION_RENDER_OUTPUT_NEXT;
     mKeyPressMap[KeyModPair(GLFW_KEY_COMMA, MOD_NONE)]            = ACTION_RENDER_OUTPUT_PREV;
     mKeyPressMap[KeyModPair(GLFW_KEY_GRAVE_ACCENT, MOD_NONE)]     = ACTION_CHANNEL_TOGGLE_RGB;
+    mKeyPressMap[KeyModPair(GLFW_KEY_LEFT, MOD_NONE)]             = ACTION_SNAPSHOT_PREV;
+    mKeyPressMap[KeyModPair(GLFW_KEY_RIGHT, MOD_NONE)]            = ACTION_SNAPSHOT_NEXT;
     mKeyPressMap[KeyModPair(GLFW_KEY_UP, MOD_NONE)]               = ACTION_EXPOSURE_INCREASE;
     mKeyPressMap[KeyModPair(GLFW_KEY_DOWN, MOD_NONE)]             = ACTION_EXPOSURE_DECREASE;
     mKeyPressMap[KeyModPair(GLFW_KEY_SPACE, MOD_NONE)]            = ACTION_CAM_UP;
@@ -55,6 +56,7 @@ KeyboardBindings::KeyboardBindings()
 
     mKeyPressMap[KeyModPair(GLFW_KEY_UP, GLFW_MOD_ALT)]           = ACTION_FAST_PROGRESSIVE_NEXT_MODE;
     mKeyPressMap[KeyModPair(GLFW_KEY_DOWN, GLFW_MOD_ALT)]         = ACTION_FAST_PROGRESSIVE_PREV_MODE;
+    mKeyPressMap[KeyModPair(GLFW_KEY_K, GLFW_MOD_ALT)]            = ACTION_WINDOW_TOGGLE_SNAPSHOT;
     mKeyPressMap[KeyModPair(GLFW_KEY_S, GLFW_MOD_ALT)]            = ACTION_WINDOW_TOGGLE_STATUS;
     mKeyPressMap[KeyModPair(GLFW_KEY_X, GLFW_MOD_ALT)]            = ACTION_WINDOW_TOGGLE_EXPOSURE;
     mKeyPressMap[KeyModPair(GLFW_KEY_Y, GLFW_MOD_ALT)]            = ACTION_WINDOW_TOGGLE_GAMMA;

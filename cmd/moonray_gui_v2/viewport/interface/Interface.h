@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Component.h"
+#include "Dock.h"
 #include "../../GuiTypes.h"
 #include "ImageDisplay.h"
 
@@ -20,6 +21,7 @@ class ImageDisplay;
 class PathVisualizerWindow;
 class PixelInspector;
 class SceneInspector;
+class SnapshotWindow;
 class StatusBar;
 class Viewport;
 
@@ -52,14 +54,15 @@ public:
     void togglePathVisualizerWindow();
     void togglePixelInspector();
     void toggleSceneInspector();
+    void toggleSnapshotWindow();
     void toggleStatusBar();
 
-    // Get the width/height of all docked ui components
+    // Get the width/height of the docked components
     // We need this to calculate the new viewport size when 
     // docked components (i.e. ones that affect viewport size)
     // are opened or closed
-    int getDockedComponentsWidth() const;
-    int getDockedComponentsHeight() const;
+    int getRightDockWidth() const { return mRightDock.getWidth(); }
+    int getBottomDockHeight() const { return mBottomDock.getHeight(); }
 
     // Get the pixel currently underneath the mouse
     ImVec2 getCurrentPixel() const;
@@ -87,13 +90,13 @@ private:
     std::unique_ptr<PathVisualizerWindow> mPathVisualizerWindow; // ptr to path visualizer window
     std::unique_ptr<PixelInspector> mPixelInspector;             // ptr to pixel inspector window
     std::unique_ptr<SceneInspector> mSceneInspector;             // ptr to scene inspector window
+    std::unique_ptr<SnapshotWindow> mSnapshotWindow;             // ptr to snapshot taking/saving window
     std::unique_ptr<StatusBar> mStatusBar;                       // ptr to status bar
 
     // UI Components
     std::vector<Component*> mComponents;                        // ptrs to all components
-
-    int mDockedComponentsWidth {0};                             // width of the stationary ui components
-    int mDockedComponentsHeight {0};                            // height of the stationary ui components
+    HorizontalDock mBottomDock;                                 // horizontal dock along the bottom of the viewport
+    VerticalDock mRightDock;                                    // vertical dock along the right side of the viewport
 };
 
 } // namespace moonray_gui_v2

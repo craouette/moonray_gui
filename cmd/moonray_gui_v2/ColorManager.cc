@@ -4,9 +4,7 @@
 #include "ColorManager.h"
 #include "viewport/Viewport.h"
 
-#if !defined(DISABLE_OCIO)
-    #include <OpenColorIO/OpenColorIO.h>
-#endif
+#include <OpenColorIO/OpenColorIO.h>
 
 #include <scene_rdl2/render/util/GetEnv.h>
 
@@ -25,69 +23,67 @@ using namespace scene_rdl2::fb_util;
 
 /// -------------------------------- OCIO Helpers --------------------------------------
 
-#if !defined(DISABLE_OCIO)
-    OCIO::ExposureContrastTransformRcPtr createExposureTransform(const double exposure) 
-    {
-        OCIO::ExposureContrastTransformRcPtr exposureTransform = OCIO::ExposureContrastTransform::Create();
-        exposureTransform->setStyle(OCIO::EXPOSURE_CONTRAST_LINEAR);
-        exposureTransform->setExposure(exposure);
-        return exposureTransform;
-    }
+OCIO::ExposureContrastTransformRcPtr createExposureTransform(const double exposure) 
+{
+    OCIO::ExposureContrastTransformRcPtr exposureTransform = OCIO::ExposureContrastTransform::Create();
+    exposureTransform->setStyle(OCIO::EXPOSURE_CONTRAST_LINEAR);
+    exposureTransform->setExposure(exposure);
+    return exposureTransform;
+}
 
-    OCIO::ExponentTransformRcPtr createGammaTransform(const double gamma)
-    {
-        OCIO::ExponentTransformRcPtr gammaTransform = OCIO::ExponentTransform::Create();
-        const double gammaExponent = 1.0 / gamma;
-        MNRY_ASSERT(gamma > 0.0f);
-        const double gammaArr[4] = { gammaExponent, gammaExponent, gammaExponent, gammaExponent };
-        gammaTransform->setValue(gammaArr);
-        return gammaTransform;
-    }
+OCIO::ExponentTransformRcPtr createGammaTransform(const double gamma)
+{
+    OCIO::ExponentTransformRcPtr gammaTransform = OCIO::ExponentTransform::Create();
+    const double gammaExponent = 1.0 / gamma;
+    MNRY_ASSERT(gamma > 0.0f);
+    const double gammaArr[4] = { gammaExponent, gammaExponent, gammaExponent, gammaExponent };
+    gammaTransform->setValue(gammaArr);
+    return gammaTransform;
+}
 
-    OCIO::RangeTransformRcPtr createClampTransform(const double minClamp, const double maxClamp) 
-    {
-        OCIO::RangeTransformRcPtr rangeTransform = OCIO::RangeTransform::Create();
-        rangeTransform->setStyle(OCIO::RANGE_CLAMP);
-        rangeTransform->setMinInValue(minClamp);
-        rangeTransform->setMaxInValue(maxClamp);
-        rangeTransform->setMinOutValue(minClamp);
-        rangeTransform->setMaxOutValue(maxClamp);
-        return rangeTransform;
-    }
+OCIO::RangeTransformRcPtr createClampTransform(const double minClamp, const double maxClamp) 
+{
+    OCIO::RangeTransformRcPtr rangeTransform = OCIO::RangeTransform::Create();
+    rangeTransform->setStyle(OCIO::RANGE_CLAMP);
+    rangeTransform->setMinInValue(minClamp);
+    rangeTransform->setMaxInValue(maxClamp);
+    rangeTransform->setMinOutValue(minClamp);
+    rangeTransform->setMaxOutValue(maxClamp);
+    return rangeTransform;
+}
 
-    OCIO::MatrixTransformRcPtr createChannelViewTransform(const OCIO::ConstConfigRcPtr& config, 
-                                                          std::array<int, 4>& channel) 
-    {
-        // Channel swizzling
-        double lumaCoef1 = scene_rdl2::util::getenv<double>("LUMA_COEF1", SRGB_LUMA_COEF1);
-        double lumaCoef2 = scene_rdl2::util::getenv<double>("LUMA_COEF2", SRGB_LUMA_COEF2);
-        double lumaCoef3 = scene_rdl2::util::getenv<double>("LUMA_COEF3", SRGB_LUMA_COEF3);
-        double lumacoef[3] = { lumaCoef1, lumaCoef2, lumaCoef3 };
-        double m44[16];
-        double offset[4];
+OCIO::MatrixTransformRcPtr createChannelViewTransform(const OCIO::ConstConfigRcPtr& config, 
+                                                        std::array<int, 4>& channel) 
+{
+    // Channel swizzling
+    double lumaCoef1 = scene_rdl2::util::getenv<double>("LUMA_COEF1", SRGB_LUMA_COEF1);
+    double lumaCoef2 = scene_rdl2::util::getenv<double>("LUMA_COEF2", SRGB_LUMA_COEF2);
+    double lumaCoef3 = scene_rdl2::util::getenv<double>("LUMA_COEF3", SRGB_LUMA_COEF3);
+    double lumacoef[3] = { lumaCoef1, lumaCoef2, lumaCoef3 };
+    double m44[16];
+    double offset[4];
 
-        OCIO::MatrixTransform::View(m44, offset, channel.data(), lumacoef);
-        OCIO::MatrixTransformRcPtr swizzle = OCIO::MatrixTransform::Create();
-        swizzle->setMatrix(m44);
-        swizzle->setOffset(offset);
-        return swizzle;
-    }
+    OCIO::MatrixTransform::View(m44, offset, channel.data(), lumacoef);
+    OCIO::MatrixTransformRcPtr swizzle = OCIO::MatrixTransform::Create();
+    swizzle->setMatrix(m44);
+    swizzle->setOffset(offset);
+    return swizzle;
+}
 
-    OCIO::DisplayViewTransformRcPtr createDisplayViewTransform(const OCIO::ConstConfigRcPtr config, 
-                                                               const bool configIsRaw) 
-    {
-        // Lookup the display ColorSpace
-        const char* display = config->getDefaultDisplay();
-        const char* view = config->getDefaultView(display);
+OCIO::DisplayViewTransformRcPtr createDisplayViewTransform(const OCIO::ConstConfigRcPtr config, 
+                                                            const bool configIsRaw) 
+{
+    // Lookup the display ColorSpace
+    const char* display = config->getDefaultDisplay();
+    const char* view = config->getDefaultView(display);
 
-        // Create a DisplayViewTransform, and set the input and display ColorSpaces
-        OCIO::DisplayViewTransformRcPtr transform = OCIO::DisplayViewTransform::Create();
-        transform->setSrc( configIsRaw ? OCIO::ROLE_DEFAULT : OCIO::ROLE_SCENE_LINEAR );
-        transform->setDisplay( display );
-        transform->setView( view ); 
-        return transform;
-    }
-#endif
+    // Create a DisplayViewTransform, and set the input and display ColorSpaces
+    OCIO::DisplayViewTransformRcPtr transform = OCIO::DisplayViewTransform::Create();
+    transform->setSrc( configIsRaw ? OCIO::ROLE_DEFAULT : OCIO::ROLE_SCENE_LINEAR );
+    transform->setDisplay( display );
+    transform->setView( view ); 
+    return transform;
+}
 
 /// ------------------------------------ General Helpers -----------------------------------------------
 
@@ -133,11 +129,7 @@ void floatBufferToRgb888(const float* src, const int w, const int h, const int c
 
 /// --------------------------------- ColorManager Class -------------------------------------------
 
-#if !defined(DISABLE_OCIO)
-    ColorManager::ColorManager() : mConfig(nullptr), mConfigIsRaw(false) {};  
-#else
-    ColorManager::ColorManager() = default;  
-#endif
+ColorManager::ColorManager() : mConfig(nullptr), mConfigIsRaw(false) {};
 ColorManager::~ColorManager() = default;
 
 /// Applies color render transform to a render buffer, performing the following ops (not necessarily in order):
@@ -159,57 +151,40 @@ void ColorManager::applyCRT(const Viewport* viewport,
     const double exposure = viewport->getExposure();
     const double gamma = viewport->getGamma();
     const DebugMode mode = viewport->getDebugMode();
-    const bool useOCIO = viewport->getUseOCIO();
 
-    #if !defined(DISABLE_OCIO)
+    OCIO::ConstCPUProcessorRcPtr cpuProcessor;
+    configureOcio(exposure, gamma, mode, cpuProcessor);
 
-        OCIO::ConstCPUProcessorRcPtr cpuProcessor;
-        if (useOCIO) {
-            configureOcio(exposure, gamma, mode, cpuProcessor);
-        }
+    int numChannels = renderOutputBuffer.getFormat() == VariablePixelBuffer::FLOAT4 || renderOutput < 0 ? 4 : 
+                        renderOutputBuffer.getFormat() == VariablePixelBuffer::FLOAT3 ? 3 : -1;  
 
-        int numChannels = renderOutputBuffer.getFormat() == VariablePixelBuffer::FLOAT4 || renderOutput < 0 ? 4 : 
-                          renderOutputBuffer.getFormat() == VariablePixelBuffer::FLOAT3 ? 3 : -1;  
+    if (mode != RGB_NORMALIZED && mode != NUM_SAMPLES && numChannels >= 3) {
+        // OCIO code path for RenderBuffer
+        if (renderOutput < 0) {
 
-        if (useOCIO && mode != RGB_NORMALIZED && mode != NUM_SAMPLES && numChannels >= 3) {
-            // OCIO code path for RenderBuffer
-            if (renderOutput < 0) {
-
-                Vec4<float>* bufConst = const_cast<Vec4<float>*>(renderBuffer.getData());
-                applyCRT_Ocio(cpuProcessor, 
-                              bufConst, 
-                              displayBuffer, 
-                              renderBuffer.getWidth(), 
-                              renderBuffer.getHeight(), 4);
-            }
-            // OCIO code path for VariablePixelBuffer
-            else if ((renderOutputBuffer.getFormat() == VariablePixelBuffer::FLOAT3 || 
-                      renderOutputBuffer.getFormat() == VariablePixelBuffer::FLOAT4)) {
-
-                unsigned char* bufConst = const_cast<unsigned char*>(renderOutputBuffer.getData());
-                applyCRT_Ocio(cpuProcessor, 
-                              bufConst, 
-                              displayBuffer, 
-                              renderOutputBuffer.getWidth(), 
-                              renderOutputBuffer.getHeight(), 
-                              numChannels);
-            } 
-        }
-        // Applies the old color management code if useOCIO is false, mode is RGB_NORMALIZED or NUM_SAMPLES OR
-        // if VariablePixelBuffer number of channels < 3 (I haven't found a case where this is true)
-        else {
-            applyCRT_Legacy(renderBuffer, 
-                            renderOutputBuffer,
+            Vec4<float>* bufConst = const_cast<Vec4<float>*>(renderBuffer.getData());
+            applyCRT_Ocio(cpuProcessor, 
+                            bufConst, 
                             displayBuffer, 
-                            renderOutput,
-                            exposure, 
-                            gamma, 
-                            mode,
-                            options, 
-                            parallel);
+                            renderBuffer.getWidth(), 
+                            renderBuffer.getHeight(), 4);
         }
-    // if < OCIO v2, just use old code path
-    #else
+        // OCIO code path for VariablePixelBuffer
+        else if ((renderOutputBuffer.getFormat() == VariablePixelBuffer::FLOAT3 || 
+                    renderOutputBuffer.getFormat() == VariablePixelBuffer::FLOAT4)) {
+
+            unsigned char* bufConst = const_cast<unsigned char*>(renderOutputBuffer.getData());
+            applyCRT_Ocio(cpuProcessor, 
+                            bufConst, 
+                            displayBuffer, 
+                            renderOutputBuffer.getWidth(), 
+                            renderOutputBuffer.getHeight(), 
+                            numChannels);
+        } 
+    }
+    // Applies the old color management code if mode is RGB_NORMALIZED or NUM_SAMPLES OR
+    // if VariablePixelBuffer number of channels < 3 (I haven't found a case where this is true)
+    else {
         applyCRT_Legacy(renderBuffer, 
                         renderOutputBuffer,
                         displayBuffer, 
@@ -219,85 +194,109 @@ void ColorManager::applyCRT(const Viewport* viewport,
                         mode,
                         options, 
                         parallel);
-    #endif
+    }
+}
+
+void ColorManager::applySnapshotCRT(const Viewport* viewport,
+                                    const float* pixelData, 
+                                    const int width, 
+                                    const int height,
+                                    Rgb888Buffer* displayBuffer) const 
+{
+    const double exposure = viewport->getExposure();
+    const double gamma = viewport->getGamma();
+    DebugMode mode = viewport->getDebugMode();
+    // For snapshots, we don't support these modes
+    if (mode == RGB_NORMALIZED || mode == NUM_SAMPLES) {
+        mode = RGB;
+    }
+
+    OCIO::ConstCPUProcessorRcPtr cpuProcessor;
+
+    configureOcio(exposure, gamma, mode, cpuProcessor);
+
+    applyCRT_Ocio(cpuProcessor, 
+                  pixelData, 
+                  displayBuffer, 
+                  width, 
+                  height, 
+                  /*channels*/ 4);
 }
 
 void ColorManager::setupConfig() 
 {
-    #if !defined(DISABLE_OCIO)
-        try {
-            mConfig = OCIO::Config::CreateFromEnv();
-            mConfigIsRaw = scene_rdl2::util::getenv<std::string>("OCIO", "").empty();
-        } 
-        catch (const OCIO::Exception & exception) {
-            std::cerr << "OpenColorIO Error: Invalid filepath provided. A default color profile will be used. " <<
-                         "\nMore Info: " << exception.what() << "\n";
-            mConfig = OCIO::Config::CreateRaw();
-            mConfigIsRaw = true;
-        }
-    #endif
+    try {
+        mConfig = OCIO::Config::CreateFromEnv();
+        mConfigIsRaw = scene_rdl2::util::getenv<std::string>("OCIO", "").empty();
+    } 
+    catch (const OCIO::Exception & exception) {
+        std::cerr << "OpenColorIO Error: Invalid filepath provided. A default color profile will be used. " <<
+                        "\nMore Info: " << exception.what() << "\n";
+        mConfig = OCIO::Config::CreateRaw();
+        mConfigIsRaw = true;
+    }
 }
 
-#if !defined(DISABLE_OCIO)
+/// Configures the OpenColorIO transforms to be applied in the following order:
+///     1. Exposure
+///     2. User-defined gamma
+///     3. Swizzle between debug modes
+///     4. Transforms from scene-referred to display-referred by either:
+///         - Applying the default display/view provided in an ocio config file
+///         - Applying a 1/2.2 default gamma if no config file provided
+///     5. Clamp [0,1]
+/// 
+void ColorManager::configureOcio(const double exposure, 
+                                    const double gamma, 
+                                    const DebugMode mode, 
+                                    OCIO::ConstCPUProcessorRcPtr& cpuProcessor) const
+{
+    const OCIO::ExposureContrastTransformRcPtr exposureTransform = createExposureTransform(exposure);
+    const OCIO::ExponentTransformRcPtr userGammaTransform =        createGammaTransform(gamma);
+    const OCIO::RangeTransformRcPtr rangeTransform =               createClampTransform(0.0, 1.0);
 
-    /// Configures the OpenColorIO transforms to be applied in the following order:
-    ///     1. Exposure
-    ///     2. User-defined gamma
-    ///     3. Swizzle between debug modes
-    ///     4. Transforms from scene-referred to display-referred by either:
-    ///         - Applying the default display/view provided in an ocio config file
-    ///         - Applying a 1/2.2 default gamma if no config file provided
-    ///     5. Clamp [0,1]
-    /// 
-    void ColorManager::configureOcio(const double exposure, 
-                                     const double gamma, 
-                                     const DebugMode mode, 
-                                     OCIO::ConstCPUProcessorRcPtr& cpuProcessor) const
-    {
-        const OCIO::ExposureContrastTransformRcPtr exposureTransform = createExposureTransform(exposure);
-        const OCIO::ExponentTransformRcPtr userGammaTransform =        createGammaTransform(gamma);
-        const OCIO::RangeTransformRcPtr rangeTransform =               createClampTransform(0.0, 1.0);
+    // Configure the color channel toggle transform
+    std::array<int, 4> channelHot;
+    setHotChannel(mode, channelHot);
+    const OCIO::MatrixTransformRcPtr channelViewTransform =        createChannelViewTransform(mConfig, channelHot);
+    // Create a DisplayViewTransform, and set the input and display ColorSpaces
+    const OCIO::DisplayViewTransformRcPtr transform =              createDisplayViewTransform(mConfig, mConfigIsRaw);
 
-        // Configure the color channel toggle transform
-        std::array<int, 4> channelHot;
-        setHotChannel(mode, channelHot);
-        const OCIO::MatrixTransformRcPtr channelViewTransform =        createChannelViewTransform(mConfig, channelHot);
-        // Create a DisplayViewTransform, and set the input and display ColorSpaces
-        const OCIO::DisplayViewTransformRcPtr transform =              createDisplayViewTransform(mConfig, mConfigIsRaw);
-
-        // Create group transform to wrap all of the transforms
-        OCIO::GroupTransformRcPtr groupTransform = OCIO::GroupTransform::Create();
-        groupTransform->appendTransform(exposureTransform);
-        groupTransform->appendTransform(userGammaTransform);
-        groupTransform->appendTransform(channelViewTransform);
-        groupTransform->appendTransform(transform);
-        if (mConfigIsRaw) {
-            OCIO::ExponentTransformRcPtr gammaTransform = createGammaTransform(DEFAULT_GAMMA);
-            groupTransform->appendTransform(gammaTransform);
-        }
-        groupTransform->appendTransform(rangeTransform);
-
-        // Create processor for view transform
-        OCIO::ConstProcessorRcPtr processor = mConfig->getProcessor(groupTransform);
-        cpuProcessor = processor->getDefaultCPUProcessor();   
-    }       
-
-    void ColorManager::applyCRT_Ocio(const OCIO::ConstCPUProcessorRcPtr& cpuProcessor, 
-                                     void* srcData, 
-                                     Rgb888Buffer* destBuf, 
-                                     const int w, const int h, 
-                                     const int channels)
-    {
-        // Apply color transforms
-        OCIO::PackedImageDesc img(srcData, w, h, channels);
-        cpuProcessor->apply(img);
-        float* imgOutput = reinterpret_cast<float*>(img.getData());
-
-        destBuf->init(w, h);
-        floatBufferToRgb888(imgOutput, w, h, channels, destBuf); 
+    // Create group transform to wrap all of the transforms
+    OCIO::GroupTransformRcPtr groupTransform = OCIO::GroupTransform::Create();
+    groupTransform->appendTransform(exposureTransform);
+    groupTransform->appendTransform(userGammaTransform);
+    groupTransform->appendTransform(channelViewTransform);
+    groupTransform->appendTransform(transform);
+    if (mConfigIsRaw) {
+        OCIO::ExponentTransformRcPtr gammaTransform = createGammaTransform(DEFAULT_GAMMA);
+        groupTransform->appendTransform(gammaTransform);
     }
-#endif
+    groupTransform->appendTransform(rangeTransform);
 
+    // Create processor for view transform
+    OCIO::ConstProcessorRcPtr processor = mConfig->getProcessor(groupTransform);
+    cpuProcessor = processor->getDefaultCPUProcessor();   
+}       
+
+void ColorManager::applyCRT_Ocio(const OCIO::ConstCPUProcessorRcPtr& cpuProcessor, 
+                                    void* srcData, 
+                                    Rgb888Buffer* destBuf, 
+                                    const int w, const int h, 
+                                    const int channels)
+{
+    // Apply color transforms
+    OCIO::PackedImageDesc img(srcData, w, h, channels);
+    cpuProcessor->apply(img);
+    float* imgOutput = reinterpret_cast<float*>(img.getData());
+
+    destBuf->init(w, h);
+    floatBufferToRgb888(imgOutput, w, h, channels, destBuf); 
+}
+
+/// TODO: it would be nice to eliminate this legacy code path at some point in the future
+/// We could likely remove most of the channel extraction code since OCIO can handle that
+/// but RGB_NORMALIZED and NUM_SAMPLES would still need to be handled here.
 void ColorManager::applyCRT_Legacy(const RenderBuffer& renderBuffer, 
                                    const VariablePixelBuffer& renderOutputBuffer,
                                    Rgb888Buffer* displayBuffer, 

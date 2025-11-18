@@ -9,22 +9,23 @@
 namespace moonray_gui_v2 {
 
 ImVec2
-SceneInspector::getBottomRightPosition() const
+SceneInspector::getBottomRightPosition(const ImVec2& dockOffset) const
 {
     ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
-    return ImVec2(imguiViewport->Size.x - 20 - mWidth, imguiViewport->Size.y - 40 - mHeight);
+    return ImVec2(imguiViewport->Size.x - mViewportPadding - mWidth - dockOffset.x, 
+                  imguiViewport->Size.y - mViewportPadding - mHeight - dockOffset.y);
 }
 
 void
-SceneInspector::draw(Viewport* viewport, const ImVec2& currentPixel)
+SceneInspector::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset)
 {
     if (mOpen) { 
         ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
     
-        ImGui::SetNextWindowPos(getBottomRightPosition(), ImGuiCond_Once);
-        ImGui::SetNextWindowSize(ImVec2(mWidth, mHeight), ImGuiCond_Once);
+        ImGui::SetNextWindowPos(getBottomRightPosition(dockOffset), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(mWidth, mHeight), ImGuiCond_Appearing);
     
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(mWindowPadding, mWindowPadding));
     
         if (ImGui::Begin("Scene Inspector", &mOpen)) {
             // ------ Dropdown to select inspector mode ------

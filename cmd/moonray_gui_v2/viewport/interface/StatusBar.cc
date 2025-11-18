@@ -9,7 +9,7 @@
 namespace moonray_gui_v2 {
 
 void
-StatusBar::draw(Viewport* viewport, const ImVec2& currentPixel)
+StatusBar::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset)
 {
     if (mOpen) {
         // Set position & size
@@ -17,10 +17,10 @@ StatusBar::draw(Viewport* viewport, const ImVec2& currentPixel)
 
         // Position at bottom of viewport by finding the size of the viewport
         // and subtracting the height of the status bar and any offset from bottom
-        ImGui::SetNextWindowPos(ImVec2(0, imguiViewport->Size.y - mHeight));
-        ImGui::SetNextWindowSize(ImVec2(imguiViewport->WorkSize.x, mHeight));
+        ImGui::SetNextWindowPos(ImVec2(0, imguiViewport->Size.y - dockOffset.y - mHeight));
+        ImGui::SetNextWindowSize(ImVec2(imguiViewport->WorkSize.x - dockOffset.x, mHeight));
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2, 2));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(mWindowPadding, mWindowPadding));
 
         ImGui::Begin("##Status Bar", nullptr, ImGuiWindowFlags_NoTitleBar |
                                               ImGuiWindowFlags_NoDecoration |
@@ -38,17 +38,17 @@ StatusBar::draw(Viewport* viewport, const ImVec2& currentPixel)
         const int currentPixelY = static_cast<int>(currentPixel.y);
 
         ImGui::Text("(%d, %d)", currentPixelX, currentPixelY);
-        ImGui::SameLine(0.0f, 15.0f);
+        ImGui::SameLine(0.0f, mLargeSpace);
         ImGui::Text("%s", getDebugModeStr(viewport->getDebugMode()).c_str());
-        ImGui::SameLine(0.0f, 15.0f);
+        ImGui::SameLine(0.0f, mLargeSpace);
         ImGui::Text("%s", getFastProgressiveModeStr(viewport->isFastProgressive(), viewport->getFastMode()).c_str());
-        ImGui::SameLine(0.0f, 15.0f);
+        ImGui::SameLine(0.0f, mLargeSpace);
         ImGui::Text("%s", getDenoiseModeStr(viewport->getDenoisingEnabled(), viewport->getDenoiserMode()).c_str());
-        ImGui::SameLine(0.0f, 5.0f);
+        ImGui::SameLine(0.0f, mSmallSpace);
         ImGui::Text("%s", getDenoiseBufferStr(viewport->getDenoisingEnabled(), viewport->getDenoisingBufferMode()).c_str());
-        ImGui::SameLine(0.0f, 15.0f);
+        ImGui::SameLine(0.0f, mLargeSpace);
         ImGui::Text("%s", getCameraTypeStr(viewport->getActiveCameraType()).c_str());
-        ImGui::SameLine(0.0f, 15.0f);
+        ImGui::SameLine(0.0f, mLargeSpace);
         ImGui::Text("%s", getRenderOutputStr(viewport->getRenderOutputName()).c_str());
         ImGui::End();
         ImGui::PopStyleVar();

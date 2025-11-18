@@ -37,11 +37,11 @@ PathVisualizerWindow::drawPixelSelector()
         const int pixelX = static_cast<int>(mManager->getPixelX());
         const int pixelY = static_cast<int>(mManager->getPixelY());
 
-        drawInputInt("Pixel X", pixelX, 1, 10, [this](int value) {
+        drawInputInt("Pixel X", pixelX, mMinPixelX, mMaxPixelX, [this](int value) {
             this->mManager->setPixelX(static_cast<uint32_t>(std::max(0, value)), /*update*/ true);
         });
 
-        drawInputInt("Pixel Y", pixelY, 1, 10, [this](int value) {
+        drawInputInt("Pixel Y", pixelY, mMinPixelY, mMaxPixelY, [this](int value) {
             this->mManager->setPixelY(static_cast<uint32_t>(std::max(0, value)), /*update*/ true);
         });
     }
@@ -64,17 +64,17 @@ PathVisualizerWindow::drawSamplingSettingsMenu()
         ImGui::BeginDisabled(useSceneSamples);
 
         // -------------------- Pixel Samples Input --------------------------- //
-        drawInputInt("Pixel Samples", mManager->getPixelSamples(), 1, 32, [this](int value) {
+        drawInputInt("Pixel Samples", mManager->getPixelSamples(), mMinPixelSamples, mMaxPixelSamples, [this](int value) {
             this->mManager->setPixelSamples(value, /*update*/ true);
         });
         
         // -------------------- Light Samples Input --------------------------- //
-        drawInputInt("Light Samples", mManager->getLightSamples(), 1, 32, [this](int value) {
+        drawInputInt("Light Samples", mManager->getLightSamples(), mMinLightSamples, mMinLightSamples, [this](int value) {
             this->mManager->setLightSamples(value, /*update*/ true);
         });
         
         // -------------------- BSDF Samples Input --------------------------- //
-        drawInputInt("BSDF  Samples", mManager->getBsdfSamples(), 1, 32, [this](int value) {
+        drawInputInt("BSDF  Samples", mManager->getBsdfSamples(), mMinBsdfSamples, mMaxBsdfSamples, [this](int value) {
             this->mManager->setBsdfSamples(value, /*update*/ true);
         });
 
@@ -90,7 +90,7 @@ PathVisualizerWindow::drawMaxDepthMenu()
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     if (ImGui::CollapsingHeader("Max Depth")) {
 
-        drawInputInt("Max Depth", mManager->getMaxDepth(), 1, 20, [this](int value) {
+        drawInputInt("Max Depth", mManager->getMaxDepth(), mMinMaxDepth, mMaxMaxDepth, [this](int value) {
             this->mManager->setMaxDepth(value, /*update*/ true);
         });
     }
@@ -131,7 +131,7 @@ PathVisualizerWindow::drawStyleMenu()
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     if (ImGui::CollapsingHeader("Style Options")) {
         // Line width control
-        drawInputInt("Line Width", mManager->getLineWidth(), 1, 8, [this](int value) {
+        drawInputInt("Line Width", mManager->getLineWidth(), mMinLineWidth, mMaxLineWidth, [this](int value) {
             this->mManager->setLineWidth(value);
         });
         
@@ -156,7 +156,7 @@ PathVisualizerWindow::drawStyleMenu()
 }
 
 void
-PathVisualizerWindow::draw(Viewport* viewport, const ImVec2& currentPixel)
+PathVisualizerWindow::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset)
 {
     if (mOpen) {
         // If path visualizer manager doesn't exist, we can't
@@ -169,11 +169,11 @@ PathVisualizerWindow::draw(Viewport* viewport, const ImVec2& currentPixel)
 
         // Establish size and position
         ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(ImVec2(imguiViewport->Size.x - mWidth, 0));
+        ImGui::SetNextWindowPos(ImVec2(imguiViewport->Size.x - mWidth - dockOffset.x, 0));
         ImGui::SetNextWindowSize(ImVec2(mWidth, imguiViewport->Size.y));
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 10));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 8.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(mWindowPadding, mWindowPadding));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, mItemSpacing));
 
         // Create window
         ImGui::Begin("Path Visualizer", &mOpen, ImGuiWindowFlags_NoMove | 
