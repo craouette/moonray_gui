@@ -69,7 +69,7 @@ PathVisualizerWindow::drawSamplingSettingsMenu()
         });
         
         // -------------------- Light Samples Input --------------------------- //
-        drawInputInt("Light Samples", mManager->getLightSamples(), mMinLightSamples, mMinLightSamples, [this](int value) {
+        drawInputInt("Light Samples", mManager->getLightSamples(), mMinLightSamples, mMaxLightSamples, [this](int value) {
             this->mManager->setLightSamples(value, /*update*/ true);
         });
         

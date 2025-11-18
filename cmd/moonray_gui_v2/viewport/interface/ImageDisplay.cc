@@ -83,7 +83,7 @@ ImageDisplay::drawLine(const int x1, const int y1, const int x2, const int y2, c
     const ImVec2 start = imageToViewportCoords(x1, y1);
     const ImVec2 end = imageToViewportCoords(x2, y2);
 
-    ImU32 lineColor = IM_COL32(color.r * 255, color.g * 255, color.b * 255, 255);
+    ImU32 lineColor = IM_COL32(color.r * 255, color.g * 255, color.b * 255, a * 255);
     drawList->AddLine(start, end, lineColor, w);
 
     if (drawEndPoint) {

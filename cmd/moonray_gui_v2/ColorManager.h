@@ -30,7 +30,7 @@ public:
                   const bool parallel) const;
 
     void applySnapshotCRT(const Viewport* viewport,
-                          const float* pixelData, 
+                          float* pixelData,
                           const int width, 
                           const int height,
                           scene_rdl2::fb_util::Rgb888Buffer* displayBuffer) const;

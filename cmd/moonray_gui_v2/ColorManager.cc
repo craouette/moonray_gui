@@ -198,7 +198,7 @@ void ColorManager::applyCRT(const Viewport* viewport,
 }
 
 void ColorManager::applySnapshotCRT(const Viewport* viewport,
-                                    const float* pixelData, 
+                                    float* pixelData,
                                     const int width, 
                                     const int height,
                                     Rgb888Buffer* displayBuffer) const 
