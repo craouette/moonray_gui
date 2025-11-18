@@ -21,7 +21,7 @@ public:
     ~SnapshotManager() {};
 
     void takeASnapshot(const moonray::rndr::RenderContext* renderContext);
-    void createTexture(const float* pixels, const int width, const int height);
+    void createTexture(float* pixels, const int width, const int height);
 
     void load();
     void loadSnapshotAtIdx(const int idx);

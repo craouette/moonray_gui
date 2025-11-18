@@ -104,7 +104,7 @@ public:
     NavigationCam* getNavigationCam();
 
     // Gets pointer to snapshot manager
-    const SnapshotManager* getSnapshotManager() const { return mSnapshotManager.get(); }
+    SnapshotManager* getSnapshotManager() { return mSnapshotManager.get(); }
 
     // Gets pointer to keyboard state
     const Keyboard* getKeyboard() const { return mKeyboard.get(); }

@@ -107,7 +107,7 @@ SnapshotManager::takeASnapshot(const moonray::rndr::RenderContext* renderContext
 }
 
 void
-SnapshotManager::createTexture(const float* pixels, const int width, const int height)
+SnapshotManager::createTexture(float* pixels, const int width, const int height)
 {
     // Apply color grading to the snapshot pixels
     scene_rdl2::fb_util::Rgb888Buffer displayBuffer;
