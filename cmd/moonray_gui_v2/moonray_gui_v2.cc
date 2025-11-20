@@ -199,7 +199,7 @@ RaasGuiApplication::startRenderThread(void* me)
 
             moonray::rndr::PathVisualizerManager* visualizer = renderContext->getPathVisualizerManager().get();
 
-            while (!self->mViewport->isWindowClosed()) {
+            while (self->mViewport->isWindowOpen()) {
 
                 // Execute startFrame() if renderContext has forceCallStartFrame condition
                 renderContext->forceGuiCallStartFrameIfNeed();
@@ -322,7 +322,7 @@ RaasGuiApplication::startRenderThread(void* me)
             // not strictly necessary, but just to be thorough:
             self->mRenderGui->setContext(nullptr);
 
-        } while (!self->mViewport->isWindowClosed());
+        } while (self->mViewport->isWindowOpen());
     } catch (...) {
         self->mException = std::current_exception();
     }

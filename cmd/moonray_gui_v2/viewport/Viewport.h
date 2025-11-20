@@ -58,7 +58,7 @@ public:
     
     // -------------------------------------- Getters --------------------------------------- //
     // Checks if the GLFW window has been closed
-    bool isWindowClosed() const;
+    bool isWindowOpen() const;
 
     // Gets exposure
     float getExposure() const { return mExposure; }
@@ -284,6 +284,8 @@ private:
     bool mPanImage {false};                                     // is image panning active
 
     bool mSnapshotsLoaded {false};                              // have we loaded existing snapshots yet?
+
+    bool mOpen {true};                                          // whether the viewport is open
 };
    
 } // namespace moonray_gui_v2

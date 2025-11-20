@@ -184,9 +184,9 @@ Viewport::~Viewport()
 }
 
 bool
-Viewport::isWindowClosed() const
+Viewport::isWindowOpen() const
 {
-    return glfwWindowShouldClose(mGLFWWindow);
+    return mOpen;
 }
 
 void
@@ -215,6 +215,7 @@ Viewport::exec()
         // Swap for the recently drawn buffer (allows for seamless refresh transition)
         glfwSwapBuffers(mGLFWWindow);
     }
+    mOpen = false;
 }
 
 /// ---------------------------- Camera Methods -------------------------------------- ///
