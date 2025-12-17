@@ -94,3 +94,16 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 | Snapshot Take | `K` | |
 | Tile Progress Toggle* | `T` | Previously `P` |
 
+## Configuration Files
+
+moonray_gui_v2 stores user configuration and state files in a dedicated config directory to keep the project folder clean:
+
+- **Linux/macOS**: `~/.config/moonray_gui/`
+- **Windows**: `%APPDATA%/moonray_gui/`
+
+The following files are stored there:
+- `imgui.ini` - ImGui window layout and positions
+- (Future: keybindings)
+
+The config directory is created automatically on first run. If creation fails, settings will not persist between sessions.
+

@@ -47,26 +47,25 @@ variants = [
         'refplat-vfx2023.1',
         'clang-17.0.6.x'
     ],
-    # Won't build until we upgrade to Qt 6
-    # [
-    #     'os-rocky-9',
-    #     'opt_level-optdebug',
-    #     'refplat-vfx2024.0',
-    #     'gcc-11.x'
-    # ],
-    # [
-    #     'os-rocky-9',
-    #     'opt_level-optdebug',
-    #     'refplat-vfx2025.0',
-    #     'gcc-11.x'
-    # ],
-    # [
-    #     'os-rocky-9',
-    #     'opt_level-optdebug',
-    #     'refplat-houdini21.0',
-    #     'gcc-11.x'
-    # ],
     [   # variant 3
+        'os-rocky-9',
+        'opt_level-optdebug',
+        'refplat-vfx2024.0',
+        'gcc-11.x'
+    ],
+    [   # variant 4
+        'os-rocky-9',
+        'opt_level-optdebug',
+        'refplat-vfx2025.0',
+        'gcc-11.x'
+    ],
+    [   # variant 5
+        'os-rocky-9',
+        'opt_level-optdebug',
+        'refplat-houdini21.0',
+        'gcc-11.x'
+    ],
+    [   # variant 6
         'os-rocky-9',
         'opt_level-optdebug',
         'refplat-vfx2022.0',

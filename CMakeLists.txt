@@ -23,26 +23,15 @@ endif()
 # Find dependencies
 # ================================================
 
-find_package(Qt5 REQUIRED
-    COMPONENTS
-        Core
-        Gui
-        OpenGL)
-
 find_package(OpenGL 3 REQUIRED)
 find_package(CppUnit REQUIRED)
 
-# Intel Math Kernel Library is not required by Moonray itself, but currently it has to
-# be linked into the application if any dsos require it. Therefore we link it if it is available.
-set(MKL_THREADING tbb_thread) # Override the default MKL threading (intel_thread, which requires OMP) to use tbb_thread
-find_package(MKL CONFIG QUIET) # Look for an official MKL package first
-if(NOT TARGET MKL::MKL)
-    find_package(MKL QUIET) # Fallback to the FindMKL module
-endif()
-if(TARGET MKL::MKL)
-    set(MKL_target "MKL::MKL") # we'll use this in the target_link_libraries calls
-else()
-    message(STATUS "MKL not found, skipping")
+# Intel Math Kernel is not required by Moonray itself, but currently it has to
+# be linked into the application if any dsos require it. Therefore we link it
+# if it is available
+find_package(Mkl QUIET)
+if(${Mkl_FOUND})
+    set(MKL Mkl::Mkl)
 endif()
 
 if("${PROJECT_NAME}" STREQUAL "${CMAKE_PROJECT_NAME}")

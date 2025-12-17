@@ -27,4 +27,11 @@ void parseRdlaFileForReferences (
     std::map<std::string, std::string> &luaVariables
 );
 
+// Get the user config directory path for moonray_gui.
+// On Linux/macOS: ~/.config/moonray_gui/
+// On Windows: %APPDATA%/moonray_gui/
+// Creates the directory if it doesn't exist.
+// Returns empty string on failure.
+std::string getConfigDirectory();
+
 } // end namespace moonray_gui_v2

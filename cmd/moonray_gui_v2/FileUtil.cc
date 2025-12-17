@@ -8,6 +8,12 @@
 
 #include <regex>
 #include <fstream>
+#include <filesystem>
+#include <iostream>
+#include <cstdlib>
+#include <cerrno>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 namespace moonray_gui_v2 {
 
@@ -124,6 +130,43 @@ void parseRdlaFileForReferences (
 
     // Concatenate the new set onto the set passed in
     referencedRdlaFiles.insert(newReferencedRdlaFiles.begin(), newReferencedRdlaFiles.end());
+}
+
+std::string getConfigDirectory()
+{
+    std::string configDir;
+    
+#ifdef _WIN32
+    // Windows: Use APPDATA environment variable
+    const char* appData = std::getenv("APPDATA");
+    if (appData) {
+        configDir = std::string(appData) + "/moonray_gui";
+    } else {
+        std::cerr << "Warning: APPDATA environment variable not set. "
+                  << "Unable to create config directory." << std::endl;
+        return "";
+    }
+#else
+    // Linux/macOS: Use XDG_CONFIG_HOME or fall back to ~/.config
+    const char* xdgConfigHome = std::getenv("XDG_CONFIG_HOME");
+    if (xdgConfigHome && xdgConfigHome[0] != '\0') {
+        configDir = std::string(xdgConfigHome) + "/moonray_gui";
+    } else {
+        const char* home = std::getenv("HOME");
+        if (home) {
+            configDir = std::string(home) + "/.config/moonray_gui";
+        } else {
+            std::cerr << "Warning: HOME environment variable not set. "
+                      << "Unable to create config directory." << std::endl;
+            return "";
+        }
+    }
+#endif
+
+    // Create the directory if it doesn't exist
+    std::filesystem::create_directory(configDir);
+
+    return configDir;
 }
 
 } // end namespace moonray_gui_v2

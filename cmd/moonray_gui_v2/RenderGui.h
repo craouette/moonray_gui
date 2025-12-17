@@ -8,6 +8,8 @@
 #include <moonray/rendering/rndr/rndr.h>
 #include <scene_rdl2/common/grid_util/ShmFbOutput.h>
 
+#include <atomic>
+
 namespace moonray_gui_v2 {
 
 class DenoiserManager;
@@ -21,7 +23,7 @@ class Viewport;
 class RenderGui
 {
 public:
-    RenderGui(Viewport* window, DenoiserManager* denoiserManager);
+    RenderGui(Viewport* viewport, DenoiserManager* denoiserManager);
     ~RenderGui() {};
 
     void setContext(moonray::rndr::RenderContext *ctx) { mRenderContext = ctx; }
@@ -113,10 +115,10 @@ private:
     //
 
     /// Increment whenever any inputs which will affect the render change.
-    /// The renderering code will strive to render this frame. If it's rendering
+    /// The rendering code will strive to render this frame. If it's rendering
     /// a frame with a lower timestamp then we know the frame it's currently
     /// rendering is old.
-    tbb::atomic<uint32_t>   mMasterTimestamp {1};
+    std::atomic<uint32_t>   mMasterTimestamp {1};
 
     /// The timestamp of the frame the renderer is currently processing.
     uint32_t                mRenderTimestamp {0};

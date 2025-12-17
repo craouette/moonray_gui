@@ -13,6 +13,7 @@
 #include "SnapshotWindow.h"
 #include "StatusBar.h"
 #include "../Viewport.h"
+#include "../../FileUtil.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
@@ -57,6 +58,26 @@ Interface::Interface(Viewport* viewport)
     // Configure ImGui settings
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
+
+    // Set ImGui ini file to user config directory instead of current working directory.
+    // This prevents cluttering the project directory with imgui.ini files.
+    // The path is stored as a static variable to ensure it persists for ImGui's lifetime.
+
+    /// TODO: A imgui.ini file is used to preserve ImGui window layouts 
+    /// and settings between sessions. However, the current implementation
+    /// was not designed to leverage this feature fully -- for instance, window positions and sizes
+    /// are often calculated dynamically based on the viewport size. In the future,
+    /// we should evaluate how to better utilize this feature, or disable it altogether.
+    static std::string iniFilePath;
+    std::string configDir = getConfigDirectory();
+    if (!configDir.empty()) {
+        iniFilePath = configDir + "/imgui.ini";
+        io.IniFilename = iniFilePath.c_str();
+    } else {
+        // If we can't create the config directory, disable ini file persistence
+        io.IniFilename = nullptr;
+        std::cerr << "Warning: ImGui settings will not be saved between sessions." << std::endl;
+    }
 
     // Add UI components here
     mComponents.push_back(mExposureWindow.get());

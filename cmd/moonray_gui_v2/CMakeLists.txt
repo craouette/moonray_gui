@@ -3,7 +3,19 @@
 
 find_package(glfw3 REQUIRED)
 
-set(target moonray_gui_v2)
+# If the target 'moonray_gui' already exists,
+# create a new target 'moonray_gui_v2' so that 
+# users have the option to use either version
+#
+# If the target 'moonray_gui' does NOT exist,
+# it means we are using QT6 or higher, and refplat-vfx2025,
+# which only supports moonray_gui_v2. So set 'moonray_gui'
+# as the target for the moonray_gui_v2 executable.
+if(TARGET moonray_gui)
+    set(target moonray_gui_v2)
+else()
+    set(target moonray_gui)
+endif()
 
 add_executable(${target})
 
