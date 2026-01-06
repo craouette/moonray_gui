@@ -57,6 +57,7 @@ MainWindow::MainWindow(QWidget* parent, CameraType initialType, const char *crtO
                           QString::fromStdString("color : rgba(255.0, 255.0, 255.0, 1.0); }"));
     
     mGuide->resize(width() / 2 , height());
+    mGuide->adjustSize();
     mGuide->hide();
 
     // Setup the timer for text overlay

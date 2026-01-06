@@ -79,7 +79,8 @@ P: toggle show tiled progress
 ,: move to previous render output
 .: move to next render output
 K: Take snapshot
-L: Toogle fast progressive mode
+L: toggle fast progressive mode
+V: toggle path visualizer GUI
 Alt + Up/Down: Switch between fast render modes
 X hold + LMB drag: start exposure update
 Y hold + LMB drag: start gamma update
