@@ -131,8 +131,9 @@ PathVisualizerWindow::drawStyleMenu()
     ImGui::SetNextItemOpen(true, ImGuiCond_Once);
     if (ImGui::CollapsingHeader("Style Options")) {
         // Line width control
-        drawInputInt("Line Width", mManager->getLineWidth(), mMinLineWidth, mMaxLineWidth, [this](int value) {
-            this->mManager->setLineWidth(value);
+        int roundedLineWidth = static_cast<uint32_t>(mManager->getLineWidth() + 0.5f);
+        drawInputInt("Line Width", roundedLineWidth, mMinLineWidth, mMaxLineWidth, [this](int value) {
+            this->mManager->setLineWidth(static_cast<float>(value));
         });
         
         // Color pickers for different ray types

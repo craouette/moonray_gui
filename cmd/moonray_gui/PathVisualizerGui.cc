@@ -241,7 +241,7 @@ void PathVisualizerGui::setupStyleUI(QGridLayout* layout)
 
     QLabel* lineWidthLabel = new QLabel("Line Width: ", this);
     QSlider* lineWidthSlider = new QSlider(this);
-    const uint32_t lineWidthDefault = mPathVisualizerManager->getLineWidth();
+    const uint32_t lineWidthDefault = static_cast<uint32_t>(mPathVisualizerManager->getLineWidth() + 0.5f);
 
     lineWidthSlider->setValue(lineWidthDefault);
     lineWidthSlider->setTickInterval(LINE_WIDTH_INTERVAL);
@@ -417,7 +417,7 @@ PathVisualizerGui::slot_processLightSampleFlag(const int flag)
 void
 PathVisualizerGui::slot_setLineWidth(const int value)
 {
-    mPathVisualizerManager->setLineWidth(value);
+    mPathVisualizerManager->setLineWidth(static_cast<float>(value));
     mLineWidthValue->setText(QString::number(value));
     emit sig_styleParamChanged();
 }

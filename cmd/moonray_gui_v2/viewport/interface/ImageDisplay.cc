@@ -46,7 +46,7 @@ ImageDisplay::draw(const Viewport* viewport, const int availWidth, const int ava
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    
+
     // This window will just contain the image, no decorations or inputs
     if (ImGui::Begin("ImageViewport", nullptr, 
                     ImGuiWindowFlags_NoDecoration | 
@@ -100,16 +100,24 @@ ImageDisplay::drawPathVisualizerLines(moonray::rndr::PathVisualizerManager* mana
     // Get the scaled image size to account for zoom in/out
     const ImVec2 size = getScaledSize();
     
-    auto lineDrawingCallback = [manager, this, size](const int x1, const int y1, const int x2, const int y2, 
-            const uint8_t& flags, const float a, const float w, const bool drawEndPoint) {
+    using PosType = scene_rdl2::grid_util::VectorPacketLineStatus::PosType;
 
+    auto lineDrawingCallback = [manager, this, size](const scene_rdl2::math::Vec2i& s,
+                                                     const scene_rdl2::math::Vec2i& e,
+                                                     const uint8_t& flags,
+                                                     const float a,
+                                                     const float w,
+                                                     const bool drawEndPoint,
+                                                     const unsigned nodeId,
+                                                     const PosType startPosType,
+                                                     const PosType endPosType) {
         // Manager could have been deleted since we set up the callback
         if (!manager) { return; }
 
         // Check if the line should be visible based on user settings
         if (!manager->showRay(flags)) { return; }
 
-        drawLine(x1, y1, x2, y2, manager->getColorByFlags(flags), a, w, drawEndPoint);
+        drawLine(s[0], s[1], e[0], e[1], manager->getColorByFlags(flags), a, w, drawEndPoint);
     };
     manager->crawlAllLines(lineDrawingCallback);
 }
