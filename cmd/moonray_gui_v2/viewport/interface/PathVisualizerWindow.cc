@@ -135,7 +135,11 @@ PathVisualizerWindow::drawStyleMenu()
         drawInputInt("Line Width", roundedLineWidth, mMinLineWidth, mMaxLineWidth, [this](int value) {
             this->mManager->setLineWidth(static_cast<float>(value));
         });
-        
+        // Hidden line opacity
+        drawSliderFloat("Hidden Line Opacity", mManager->getHiddenLineOpacity(), 0.0f, 1.0f, [this](float value) {
+            this->mManager->setHiddenLineOpacity(value);
+        });
+
         // Color pickers for different ray types
         drawColorEdit("Diffuse Ray Color", mManager->getDiffuseRayColor(), [this](scene_rdl2::math::Color color) {
             this->mManager->setDiffuseRayColor(color);

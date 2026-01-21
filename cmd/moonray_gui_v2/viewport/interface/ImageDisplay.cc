@@ -117,7 +117,13 @@ ImageDisplay::drawPathVisualizerLines(moonray::rndr::PathVisualizerManager* mana
         // Check if the line should be visible based on user settings
         if (!manager->showRay(flags)) { return; }
 
-        drawLine(s[0], s[1], e[0], e[1], manager->getColorByFlags(flags), a, w, drawEndPoint);
+        // For now, if the given alpha "a" is less than 1, it's a hidden line,
+        // so use the given hidden line opacity.
+        // TODO: In the future, we might consider replacing the opacity field in the 
+        // Line struct to a field like "mHidden", and allow the frontend to draw
+        // hidden line segments however it wants
+        float opacity = a < 1.f ? manager->getHiddenLineOpacity() : 1.f;
+        drawLine(s[0], s[1], e[0], e[1], manager->getColorByFlags(flags), opacity, w, drawEndPoint);
     };
     manager->crawlAllLines(lineDrawingCallback);
 }

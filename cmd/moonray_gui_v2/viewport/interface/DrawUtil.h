@@ -16,6 +16,10 @@ namespace moonray_gui_v2 {
 void drawInputInt(const std::string& label, int value, const int min, const int max, 
                   const std::function<void(int)>& callback);
 
+// Draw a float input box with a label, and a callback for when the value changes
+void drawSliderFloat(const std::string& label, float value, const float min, const float max, 
+                  const std::function<void(float)>& callback);
+
 // Draw a color edit with a label, and a callback for when the value changes
 void drawColorEdit(const std::string& label, const scene_rdl2::math::Color& color, 
                    const std::function<void(scene_rdl2::math::Color)>& callback);
