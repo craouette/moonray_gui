@@ -19,7 +19,8 @@ public:
     int getHeight() const override { return mHeight; }
 
 private:
-    ImVec2 getBottomRightPosition(const ImVec2& dockOffset) const;
+    // Define the window settings (size, position, style, etc)
+    void configureWindow(const ImVec2& dockOffset) const;
 
     int mWidth {300};
     int mHeight {100};

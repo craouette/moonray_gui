@@ -46,6 +46,7 @@ target_sources(${target}
         viewport/interface/GammaWindow.cc
         viewport/interface/Interface.cc
         viewport/interface/ImageDisplay.cc
+        viewport/interface/KeyBindingsWindow.cc
         viewport/interface/PathVisualizerWindow.cc
         viewport/interface/PixelInspector.cc
         viewport/interface/SceneInspector.cc

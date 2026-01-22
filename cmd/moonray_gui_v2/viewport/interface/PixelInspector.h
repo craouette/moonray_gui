@@ -31,14 +31,14 @@ public:
     int getHeight() const override { return mHeight; }
 
 private:
+    // Define the window settings (size, position, style, etc)
+    void configureWindow(const ImVec2& dockOffset) const;
+
     // Get the UV coordinates for the subimage to display
     // uv0: top left corner of subimage
     // uv1: bottom right corner of subimage
     void getSubimageUVCoords(ImVec2& uv0, ImVec2& uv1, const ImVec2& currentPixel, 
                              const float textureWidth, const float textureHeight) const;
-
-    // Set the initial position and size of the window when first opened
-    void setInitialWindowPositionAndSize(const ImVec2& dockOffset);
 
     // Get the top-left and bottom-right corners in imgui window coordinates of a "pixel" in the subimage display.
     // The input is a subimage pixel coordinate, where (0,0) is the top-left pixel of the subimage.

@@ -48,8 +48,8 @@ public:
     void pan(const int xoffset, const int yoffset);
 
 private:
-    // Get the position that will center the image in the viewport
-    ImVec2 getCenteredPosition(const int availWidth, const int availHeight) const;
+    // Define the window settings (size, position, style, etc)
+    void configureWindow(const int availWidth, const int availHeight);
 
     /// Draw a line in the image display
     /// @param x1, y1: start point in pixel coordinates

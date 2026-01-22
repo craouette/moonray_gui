@@ -17,12 +17,9 @@ public:
 
     scene_rdl2::math::Mat4f  update(const float dt) override;
 
-    void                processKeyPressEvent(GLFWwindow* window, const Action action) override;
-    void                processKeyReleaseEvent(GLFWwindow* window, const Action action) override;
-
     /// Returns true if the input was used, false if ignored.
-    bool                processMousePressEvent(GLFWwindow* window, const Action action) override;
-    bool                processMouseReleaseEvent(GLFWwindow* window, const Action action) override;
+    bool                processKeyPressEvent(GLFWwindow* window, const Action action) override;
+    bool                processKeyReleaseEvent(GLFWwindow* window, const Action action) override;
     bool                processMouseMoveEvent(const double xpos, const double ypos) override;
 
     void                clearMovementState() override;
@@ -31,9 +28,12 @@ private:
     enum MouseMode
     {
         NONE,
-        MOVE,
+        ROTATE,
         ROLL,
     };
+
+    // Reset camera to its initial state
+    void resetCamera();
 
     void                printCameraMatrices() const;
 
@@ -46,7 +46,7 @@ private:
     float               mDampening {1.0f};          /// the amount by which mVelocity is dampened each update
     float               mMouseSensitivity {0.004f}; /// multiplier for mouse movement
     uint32_t            mInputState {0};            /// bitfield representing current movement state
-    MouseMode           mMouseMode {NONE};          /// current mouse interaction mode (MOVE, ROLL, NONE)
+    MouseMode           mMouseMode {NONE};          /// current mouse interaction mode (ROTATE, ROLL, NONE)
     int                 mMouseX {0};                /// last mouse x position
     int                 mMouseY {0};                /// last mouse y position
     int                 mMouseDeltaX {0};           /// change in mouse x since last update

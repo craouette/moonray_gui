@@ -168,6 +168,10 @@ private:
     // Resizes the viewport
     void resize(const int width, const int height);
 
+    /// Action handlers
+    void handlePressAction(const Action action);
+    void handleReleaseAction(const Action action, bool wasQuickPress);
+
     /// Keyboard event handlers
     void handleKeyPressEvent(const Action action);
     void handleKeyReleaseEvent(const Action action);

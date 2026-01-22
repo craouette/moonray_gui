@@ -500,16 +500,10 @@ Viewport::setPathVisualizerPixel()
     }
 }
 
-/// ---------------------------- Key Press Event Handlers ----------------------------- ///
-
+/// ------------------------------- Action Handling ---------------------------------------------------------------- ///
 void
-Viewport::handleKeyPressEvent(const Action action)
+Viewport::handlePressAction(const Action action)
 {
-    if (mKeyboard->isCameraAction(action)) {
-        getNavigationCam()->processKeyPressEvent(mGLFWWindow, action);
-        return;
-    }
-
     switch(action) {
         // Denoising actions
         case ACTION_DENOISE_TOGGLE_ON_OFF:          toggleDenoising();                      mNeedsRefresh = true; break;
@@ -530,10 +524,13 @@ Viewport::handleKeyPressEvent(const Action action)
         case ACTION_CHANNEL_TOGGLE_NUM_SAMPLES:     toggleDebugMode(NUM_SAMPLES);           mNeedsRefresh = true; break;
         
         // Image adjustment actions
+        case ACTION_EXPOSURE_ADJUST:                startAdjustExposure();                                        break;
         case ACTION_EXPOSURE_INCREASE:              increaseExposure();                     mNeedsRefresh = true; break;
         case ACTION_EXPOSURE_DECREASE:              decreaseExposure();                     mNeedsRefresh = true; break;
         case ACTION_EXPOSURE_RESET:                 resetExposure();                        mNeedsRefresh = true; break;
+        case ACTION_GAMMA_ADJUST:                   startAdjustGamma();                                           break;
         case ACTION_GAMMA_RESET:                    resetGamma();                           mNeedsRefresh = true; break;
+        case ACTION_IMAGE2D_PAN:                    mPanImage = true;                                             break;
 
         // Fast progressive mode actions
         case ACTION_FAST_PROGRESSIVE_TOGGLE:        toggleFastProgressiveMode();            mNeedsRefresh = true; break;
@@ -544,23 +541,62 @@ Viewport::handleKeyPressEvent(const Action action)
         case ACTION_SAVE_IMAGE:                     saveEXR(mRenderContext);                                      break;
         case ACTION_CAM_TOGGLE_ACTIVE_TYPE:         toggleActiveCameraType();               mNeedsRefresh = true; break;
         case ACTION_TILE_PROGRESS_TOGGLE:           toggleShowTileProgress();               mNeedsRefresh = true; break;
+        case ACTION_PICK_PATH_VISUALIZER_PIXEL:     setPathVisualizerPixel();                                     break;
         case ACTION_RENDER_OUTPUT_PREV:             prevRenderOutput();                     mNeedsRefresh = true; break;
         case ACTION_RENDER_OUTPUT_NEXT:             nextRenderOutput();                     mNeedsRefresh = true; break;
-        case ACTION_PRINT_KEYBINDINGS:              mKeyboard->printKeyBindings();                                break;
+        case ACTION_PRINT_KEY_BINDINGS:             mKeyboard->printKeyBindings();                                break;
         default: break;
     }
 }
 
 void
+Viewport::handleReleaseAction(const Action action, bool wasQuickPress)
+{
+    switch (action) {
+        case ACTION_EXPOSURE_ADJUST:
+            if (wasQuickPress) { resetExposure(); }
+            endAdjustExposure();
+            mNeedsRefresh = true;
+            break;
+        case ACTION_GAMMA_ADJUST:
+            if (wasQuickPress) { resetGamma(); }
+            endAdjustGamma();
+            mNeedsRefresh = true;
+            break;
+        case ACTION_IMAGE2D_PAN:
+            mPanImage = false;
+            break;
+        default: 
+            break;
+    }
+}
+
+/// ---------------------------- Key Press Event Handlers ----------------------------- ///
+
+void
+Viewport::handleKeyPressEvent(const Action action)
+{
+    // Try having the camera handle the action
+    if (getNavigationCam()->processKeyPressEvent(mGLFWWindow, action)) { return; }
+
+    // Otherwise, handle it in the viewport
+    handlePressAction(action);
+}
+
+void
 Viewport::handleKeyReleaseEvent(const Action action)
 {
-    getNavigationCam()->processKeyReleaseEvent(mGLFWWindow, action);
+    // Try having the camera handle the action
+    if (getNavigationCam()->processKeyReleaseEvent(mGLFWWindow, action)) { return; }
+
+    // Otherwise, handle it in the viewport
+    handleReleaseAction(action, true);
 }
 
 void
 Viewport::handleKeyEvent(const int key, const int scancode, const int type, const int mods)
 {
-    const Action action = mKeyboard->getKeyPressAction(mGLFWWindow, key, mods);
+    const Action action = mKeyboard->getActionFromInput(mGLFWWindow, key, mods);
 
     // First, check if the interface wants to explicitly
     // handle this action (currently, just for opening/closing windows)
@@ -597,55 +633,30 @@ Viewport::handleMousePressEvent(const Action action)
     // Start timing for quick-click detection
     mMouseTimer.start();
 
-    if (mKeyboard->isCameraAction(action)) {
-        getNavigationCam()->processMousePressEvent(mGLFWWindow, action);
-        return;
-    }
+    // Try having the camera handle the action
+    if (getNavigationCam()->processKeyPressEvent(mGLFWWindow, action)) { return; }
 
-    switch (action) {
-        case ACTION_EXPOSURE_ADJUST:                startAdjustExposure();      break;
-        case ACTION_GAMMA_ADJUST:                   startAdjustGamma();         break;
-        case ACTION_IMAGE2D_PAN:                    mPanImage = true;           break;
-        case ACTION_PICK_PATH_VISUALIZER_PIXEL:     setPathVisualizerPixel();   break;
-        default:                                                                break;
-    }
+    // Otherwise, handle it in the viewport
+    handlePressAction(action);
 }
 
 void 
 Viewport::handleMouseReleaseEvent(const Action action)
 {
-    if (mKeyboard->isCameraAction(action)) {
-        getNavigationCam()->processMouseReleaseEvent(mGLFWWindow, action);
-        return;
-    }
-
     // End timing for quick click detection
     mMouseTimer.end();
-    
-    switch (action) {
-        case ACTION_EXPOSURE_ADJUST:
-            if (mMouseTimer.wasQuickClick()) { resetExposure(); }
-            endAdjustExposure();
-            mNeedsRefresh = true;
-            break;
-            
-        case ACTION_GAMMA_ADJUST:
-            if (mMouseTimer.wasQuickClick()) { resetGamma(); }
-            endAdjustGamma();
-            mNeedsRefresh = true;
-            break;
-        case ACTION_IMAGE2D_PAN:
-            mPanImage = false;
-            break;
-        default: 
-            break;
-    }
+
+    // Try having the camera handle the action
+    if (getNavigationCam()->processKeyReleaseEvent(mGLFWWindow, action)) { return; }
+
+    // Otherwise, handle it in the viewport
+    handleReleaseAction(action, mMouseTimer.wasQuickClick());
 }
 
 void
 Viewport::handleMouseEvent(const int button, const int type, const int mods)
 {
-    const Action action = mKeyboard->getMousePressAction(mGLFWWindow, button, mods);
+    const Action action = mKeyboard->getActionFromInput(mGLFWWindow, button, mods);
 
     if (type == GLFW_PRESS) {
         handleMousePressEvent(action);

@@ -22,18 +22,6 @@ PixelInspector::getSubimageUVCoords(ImVec2& uv0, ImVec2& uv1, const ImVec2& curr
 }
 
 void
-PixelInspector::setInitialWindowPositionAndSize(const ImVec2& dockOffset)
-{
-    // Center the window in the viewport when first opened
-    ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
-    // Position at bottom right with some padding from edges
-    ImVec2 defaultPos = ImVec2(imguiViewport->Size.x - dockOffset.x - mPadding - mWidth, 
-                               imguiViewport->Size.y - dockOffset.y - mPadding - mHeight);
-    ImGui::SetNextWindowPos(defaultPos, ImGuiCond_Appearing);
-    ImGui::SetNextWindowSize(ImVec2(mWidth, mHeight), ImGuiCond_Appearing);
-}
-
-void
 PixelInspector::getSubimagePixelRect(ImVec2& rectMin, ImVec2& rectMax, const ImVec2& subimagePixel, 
                                      const ImVec2& imageDisplaySize) const
 {
@@ -121,6 +109,18 @@ PixelInspector::drawColorValue(const scene_rdl2::math::Color& color)
 }
 
 void
+PixelInspector::configureWindow(const ImVec2& dockOffset) const
+{
+    // Center the window in the viewport when first opened
+    ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
+    // Position at bottom right with some padding from edges
+    ImVec2 defaultPos = ImVec2(imguiViewport->Size.x - dockOffset.x - mPadding - mWidth, 
+                               imguiViewport->Size.y - dockOffset.y - mPadding - mHeight);
+    ImGui::SetNextWindowPos(defaultPos, ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(mWidth, mHeight), ImGuiCond_Appearing);
+}
+
+void
 PixelInspector::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset)
 {
     if (!mOpen) { return; }
@@ -135,8 +135,7 @@ PixelInspector::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec
     // Size of the window to display the subimage (initial widthxwidth minus some padding)
     ImVec2 imageDisplaySize = ImVec2(mWidth - mSubimagePadding, mWidth - mSubimagePadding);
 
-    // Set the default window position & size when first opened
-    setInitialWindowPositionAndSize(dockOffset);
+    configureWindow(dockOffset);
 
     // ------------ Start of window creation ---------------
     ImGui::Begin("Pixel Inspector", &mOpen);

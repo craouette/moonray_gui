@@ -77,6 +77,7 @@ Here are the hotkey mappings (the changed hotkeys have stars next to them):
 ### Window Hotkeys
 | Action | Hotkey | Notes |
 | ------ | ------ | ----- |
+| Open/Close Key Bindings Editor | `G` | new in v2 |
 | Open/Close Pixel Inspector | `P` | new in v2 |
 | Open/Close Scene Inspector | `I` | now opens a window instead of printing info to console |
 | Open/Close Snapshot Viewer | `ALT` + `K` |

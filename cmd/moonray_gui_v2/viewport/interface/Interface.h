@@ -18,6 +18,7 @@ namespace moonray_gui_v2 {
 class ExposureWindow;
 class GammaWindow;
 class ImageDisplay;
+class KeyBindingsWindow;
 class PathVisualizerWindow;
 class PixelInspector;
 class SceneInspector;
@@ -51,6 +52,7 @@ public:
     // Toggle open/closed windows
     void toggleExposureWindow();
     void toggleGammaWindow();
+    void toggleKeyBindings();
     void togglePathVisualizerWindow();
     void togglePixelInspector();
     void toggleSceneInspector();
@@ -86,6 +88,7 @@ private:
     Viewport* mViewport {nullptr};                               // ptr to the viewport manager
     std::unique_ptr<ExposureWindow> mExposureWindow;             // ptr to exposure adjustment window
     std::unique_ptr<GammaWindow> mGammaWindow;                   // ptr to gamma adjustment window
+    std::unique_ptr<KeyBindingsWindow> mKeyBindingsWindow;       // ptr to keybindings window
     std::unique_ptr<ImageDisplay> mImageDisplay;                 // ptr to gui component displaying the rendered image
     std::unique_ptr<PathVisualizerWindow> mPathVisualizerWindow; // ptr to path visualizer window
     std::unique_ptr<PixelInspector> mPixelInspector;             // ptr to pixel inspector window

@@ -9,50 +9,56 @@
 namespace moonray_gui_v2 {
 
 void
+StatusBar::configureWindow(const ImVec2& dockOffset) const
+{
+    // Set position & size
+    const ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
+
+    // Position at bottom of viewport by finding the size of the viewport
+    // and subtracting the height of the status bar and any offset from bottom
+    ImGui::SetNextWindowPos(ImVec2(0, imguiViewport->Size.y - dockOffset.y - mHeight));
+    ImGui::SetNextWindowSize(ImVec2(imguiViewport->WorkSize.x - dockOffset.x, mHeight));
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(mWindowPadding, mWindowPadding));
+}
+
+void
 StatusBar::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset)
 {
-    if (mOpen) {
-        // Set position & size
-        const ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
+    if (!mOpen) { return; }
 
-        // Position at bottom of viewport by finding the size of the viewport
-        // and subtracting the height of the status bar and any offset from bottom
-        ImGui::SetNextWindowPos(ImVec2(0, imguiViewport->Size.y - dockOffset.y - mHeight));
-        ImGui::SetNextWindowSize(ImVec2(imguiViewport->WorkSize.x - dockOffset.x, mHeight));
+    configureWindow(dockOffset);
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(mWindowPadding, mWindowPadding));
+    ImGui::Begin("##Status Bar", nullptr, ImGuiWindowFlags_NoTitleBar |
+                                            ImGuiWindowFlags_NoDecoration |
+                                            ImGuiWindowFlags_NoMove |
+                                            ImGuiWindowFlags_NoSavedSettings |
+                                            ImGuiWindowFlags_AlwaysAutoResize |
+                                            ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                            ImGuiWindowFlags_NoNavInputs |
+                                            ImGuiWindowFlags_NoNavFocus |
+                                            ImGuiWindowFlags_NoResize |
+                                            ImGuiWindowFlags_NoScrollbar);
 
-        ImGui::Begin("##Status Bar", nullptr, ImGuiWindowFlags_NoTitleBar |
-                                              ImGuiWindowFlags_NoDecoration |
-                                              ImGuiWindowFlags_NoMove |
-                                              ImGuiWindowFlags_NoSavedSettings |
-                                              ImGuiWindowFlags_AlwaysAutoResize |
-                                              ImGuiWindowFlags_NoBringToFrontOnFocus |
-                                              ImGuiWindowFlags_NoNavInputs |
-                                              ImGuiWindowFlags_NoNavFocus |
-                                              ImGuiWindowFlags_NoResize |
-                                              ImGuiWindowFlags_NoScrollbar);
+    // Get the current pixel under the mouse
+    const int currentPixelX = static_cast<int>(currentPixel.x);
+    const int currentPixelY = static_cast<int>(currentPixel.y);
 
-        // Get the current pixel under the mouse
-        const int currentPixelX = static_cast<int>(currentPixel.x);
-        const int currentPixelY = static_cast<int>(currentPixel.y);
-
-        ImGui::Text("(%d, %d)", currentPixelX, currentPixelY);
-        ImGui::SameLine(0.0f, mLargeSpace);
-        ImGui::Text("%s", getDebugModeStr(viewport->getDebugMode()).c_str());
-        ImGui::SameLine(0.0f, mLargeSpace);
-        ImGui::Text("%s", getFastProgressiveModeStr(viewport->isFastProgressive(), viewport->getFastMode()).c_str());
-        ImGui::SameLine(0.0f, mLargeSpace);
-        ImGui::Text("%s", getDenoiseModeStr(viewport->getDenoisingEnabled(), viewport->getDenoiserMode()).c_str());
-        ImGui::SameLine(0.0f, mSmallSpace);
-        ImGui::Text("%s", getDenoiseBufferStr(viewport->getDenoisingEnabled(), viewport->getDenoisingBufferMode()).c_str());
-        ImGui::SameLine(0.0f, mLargeSpace);
-        ImGui::Text("%s", getCameraTypeStr(viewport->getActiveCameraType()).c_str());
-        ImGui::SameLine(0.0f, mLargeSpace);
-        ImGui::Text("%s", getRenderOutputStr(viewport->getRenderOutputName()).c_str());
-        ImGui::End();
-        ImGui::PopStyleVar();
-    }
+    ImGui::Text("(%d, %d)", currentPixelX, currentPixelY);
+    ImGui::SameLine(0.0f, mLargeSpace);
+    ImGui::Text("%s", getDebugModeStr(viewport->getDebugMode()).c_str());
+    ImGui::SameLine(0.0f, mLargeSpace);
+    ImGui::Text("%s", getFastProgressiveModeStr(viewport->isFastProgressive(), viewport->getFastMode()).c_str());
+    ImGui::SameLine(0.0f, mLargeSpace);
+    ImGui::Text("%s", getDenoiseModeStr(viewport->getDenoisingEnabled(), viewport->getDenoiserMode()).c_str());
+    ImGui::SameLine(0.0f, mSmallSpace);
+    ImGui::Text("%s", getDenoiseBufferStr(viewport->getDenoisingEnabled(), viewport->getDenoisingBufferMode()).c_str());
+    ImGui::SameLine(0.0f, mLargeSpace);
+    ImGui::Text("%s", getCameraTypeStr(viewport->getActiveCameraType()).c_str());
+    ImGui::SameLine(0.0f, mLargeSpace);
+    ImGui::Text("%s", getRenderOutputStr(viewport->getRenderOutputName()).c_str());
+    ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 std::string

@@ -6,6 +6,7 @@
 
 #include "ExposureWindow.h"
 #include "GammaWindow.h"
+#include "KeyBindingsWindow.h"
 #include "ImageDisplay.h"
 #include "PathVisualizerWindow.h"
 #include "PixelInspector.h"
@@ -27,6 +28,7 @@ Interface::Interface(Viewport* viewport)
 : mViewport(viewport)
 , mExposureWindow(std::make_unique<ExposureWindow>())
 , mGammaWindow(std::make_unique<GammaWindow>())
+, mKeyBindingsWindow(std::make_unique<KeyBindingsWindow>())
 , mImageDisplay(std::make_unique<ImageDisplay>())
 , mPathVisualizerWindow(std::make_unique<PathVisualizerWindow>())
 , mPixelInspector(std::make_unique<PixelInspector>())
@@ -82,6 +84,7 @@ Interface::Interface(Viewport* viewport)
     // Add UI components here
     mComponents.push_back(mExposureWindow.get());
     mComponents.push_back(mGammaWindow.get());
+    mComponents.push_back(mKeyBindingsWindow.get());
     mComponents.push_back(mPathVisualizerWindow.get());
     mComponents.push_back(mPixelInspector.get());
     mComponents.push_back(mSceneInspector.get());
@@ -104,9 +107,14 @@ Interface::~Interface()
 bool
 Interface::handleKeyPressEvent(const Action action)
 {
+    // If we are currently capturing a new keybinding, only 
+    // the key bindings window should handle the input
+    if (mKeyBindingsWindow->isCapturing()) { return true; }
+
     switch(action) {
     case ACTION_WINDOW_TOGGLE_EXPOSURE:         toggleExposureWindow();         return true;
     case ACTION_WINDOW_TOGGLE_GAMMA:            toggleGammaWindow();            return true;
+    case ACTION_WINDOW_TOGGLE_KEY_BINDINGS:     toggleKeyBindings();            return true;
     case ACTION_WINDOW_TOGGLE_PATH_VISUALIZER:  togglePathVisualizerWindow();   return true;
     case ACTION_WINDOW_TOGGLE_PIXEL_INSPECTOR:  togglePixelInspector();         return true;
     case ACTION_WINDOW_TOGGLE_SCENE_INSPECTOR:  toggleSceneInspector();         return true;
@@ -213,6 +221,7 @@ Interface::resizeViewport()
 
 void Interface::toggleExposureWindow() { mExposureWindow->toggle(); }
 void Interface::toggleGammaWindow() { mGammaWindow->toggle(); }
+void Interface::toggleKeyBindings() { mKeyBindingsWindow->toggle(); }
 void Interface::togglePathVisualizerWindow() { mPathVisualizerWindow->toggle(); }
 void Interface::togglePixelInspector() { mPixelInspector->toggle(); }
 void Interface::toggleSceneInspector() { mSceneInspector->toggle(); }

@@ -7,11 +7,15 @@
 
 namespace moonray_gui_v2 {
 
-ImVec2
-GammaWindow::getCenteredPosition() const
+void
+GammaWindow::configureWindow() const
 {
+    // Center the window in the viewport when first opened
     ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
-    return ImVec2((imguiViewport->Size.x - mWidth) * 0.5f, (imguiViewport->Size.y - mHeight) * 0.5f);
+    ImVec2 position((imguiViewport->Size.x - mWidth) * 0.5f, (imguiViewport->Size.y - mHeight) * 0.5f);
+
+    ImGui::SetNextWindowPos(position, ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(mWidth, mHeight), ImGuiCond_Once);
 }
 
 void
@@ -19,9 +23,7 @@ GammaWindow::draw(Viewport* viewport, const ImVec2& /*currentPixel*/, const ImVe
 {
     if (!mOpen) { return; }
 
-    // Center the window in the viewport when first opened
-    ImGui::SetNextWindowPos(getCenteredPosition(), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(mWidth, mHeight), ImGuiCond_Once);
+    configureWindow();
 
     ImGui::Begin("Gamma", &mOpen, ImGuiWindowFlags_NoResize);
     // Get ptr to the editable gamma amount

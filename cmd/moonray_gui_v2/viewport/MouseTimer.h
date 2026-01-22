@@ -16,8 +16,15 @@ struct MouseTimer {
     // Returns whether the click was fast (less than 300 ms)
     bool wasQuickClick() const { return mLastClickDuration < 300; }
 
+    bool wasStarted() const { return mStarted; }
+
     // Start the timer
-    void start(){ if (!mStarted) { mStartTime = std::chrono::steady_clock::now(); } }
+    void start(){ 
+        if (!mStarted) { 
+            mStartTime = std::chrono::steady_clock::now();
+            mStarted = true;
+        } 
+    }
 
     // End the timer
     void end()
@@ -25,6 +32,12 @@ struct MouseTimer {
         const std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
         mLastClickDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - mStartTime).count();
         mStarted = false;
+    }
+
+    int getDurationMs()
+    { 
+        const std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(endTime - mStartTime).count();
     }
 };
 

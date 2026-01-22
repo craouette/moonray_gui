@@ -79,7 +79,7 @@ struct Camera {
     Vec3f world2camera(const Vec3f& p) const { return transformPoint(world2camera(),p);}
     Vec3f camera2world(const Vec3f& p) const { return transformPoint(camera2world(),p);}
 
-    void move (float dx, float dy, float dz)
+    void translate (float dx, float dy, float dz)
     {
         const float moveSpeed = 0.03f;
         dx *= -moveSpeed;
@@ -237,22 +237,22 @@ OrbitCam::update(const float dt)
 
     // Process keyboard input.
     if (mInputState & ORBIT_FORWARD) {
-        mCamera->move(0.0f, 0.0f, -movement);
+        mCamera->translate(0.0f, 0.0f, -movement);
     }
     if (mInputState & ORBIT_BACKWARD) {
-        mCamera->move(0.0f, 0.0f, movement);
+        mCamera->translate(0.0f, 0.0f, movement);
     }
     if (mInputState & ORBIT_LEFT) {
-        mCamera->move(movement, 0.0f, 0.0f);
+        mCamera->translate(movement, 0.0f, 0.0f);
     }
     if (mInputState & ORBIT_RIGHT) {
-        mCamera->move(-movement, 0.0f, 0.0f);
+        mCamera->translate(-movement, 0.0f, 0.0f);
     }
     if (mInputState & ORBIT_UP) {
-        mCamera->move(0.0f, movement, 0.0f);
+        mCamera->translate(0.0f, movement, 0.0f);
     }
     if (mInputState & ORBIT_DOWN) {
-        mCamera->move(0.0f, -movement, 0.0f);
+        mCamera->translate(0.0f, -movement, 0.0f);
     }
     if (mInputState & ORBIT_SLOW_DOWN) {
         mSpeed += -mSpeed * dt;
@@ -264,7 +264,7 @@ OrbitCam::update(const float dt)
     return makeCameraMatrix(*mCamera);
 }
 
-void
+bool
 OrbitCam::processKeyPressEvent(GLFWwindow* window, const Action action)
 {
     // Need to get the mouse position to recenter the camera.
@@ -277,72 +277,42 @@ OrbitCam::processKeyPressEvent(GLFWwindow* window, const Action action)
 
     // Check for pressed keys.
     switch (action) {
-    case ACTION_CAM_FORWARD:        mInputState |= ORBIT_FORWARD;           break;
-    case ACTION_CAM_BACKWARD:       mInputState |= ORBIT_BACKWARD;          break;
-    case ACTION_CAM_LEFT:           mInputState |= ORBIT_LEFT;              break;
-    case ACTION_CAM_RIGHT:          mInputState |= ORBIT_RIGHT;             break;
-    case ACTION_CAM_UP:             mInputState |= ORBIT_UP;                break;
-    case ACTION_CAM_DOWN:           mInputState |= ORBIT_DOWN;              break;
-    case ACTION_CAM_SLOW_DOWN:      mInputState |= ORBIT_SLOW_DOWN;         break;
-    case ACTION_CAM_SPEED_UP:       mInputState |= ORBIT_SPEED_UP;          break;
-    case ACTION_CAM_RECENTER:       recenterCamera();                       break;
-    case ACTION_CAM_PRINT_MATRICES: printCameraMatrices();                  break;
-    case ACTION_CAM_SET_UP_VECTOR:  mCamera->mUp = Vec3f(0.0f, 1.0f, 0.0f); break;
-    case ACTION_CAM_RESET:          if(mInitialTransformSet) {
-                                        clearMovementState();
-                                        mCamera->mPosition = mInitialPosition;
-                                        mCamera->mViewDir = mInitialViewDir;
-                                        mCamera->mUp = mInitialUp;
-                                        mCamera->mFocusDistance = mInitialFocusDistance;
-                                    }
-                                    break;
-    default: break;
-    }
-}
-
-void
-OrbitCam::processKeyReleaseEvent(GLFWwindow* window, const Action action)
-{
-    // Check for released keys.
-    switch (action) {
-    case ACTION_CAM_FORWARD:        mInputState &= ~ORBIT_FORWARD;    break;
-    case ACTION_CAM_BACKWARD:       mInputState &= ~ORBIT_BACKWARD;   break;
-    case ACTION_CAM_LEFT:           mInputState &= ~ORBIT_LEFT;       break;
-    case ACTION_CAM_RIGHT:          mInputState &= ~ORBIT_RIGHT;      break;
-    case ACTION_CAM_UP:             mInputState &= ~ORBIT_UP;         break;
-    case ACTION_CAM_DOWN:           mInputState &= ~ORBIT_DOWN;       break;
-    case ACTION_CAM_SLOW_DOWN:      mInputState &= ~ORBIT_SLOW_DOWN;  break;
-    case ACTION_CAM_SPEED_UP:       mInputState &= ~ORBIT_SPEED_UP;   break;
-    default: break;
-    }
-}
-
-bool
-OrbitCam::processMousePressEvent(GLFWwindow* window, const Action action)
-{
-    // Need to get the mouse position to recenter the camera.
-    double xpos, ypos;
-    glfwGetCursorPos(window, &xpos, &ypos);
-    mMouseX = static_cast<int>(xpos);
-    mMouseY = static_cast<int>(ypos);
-
-    pickFocusPoint();
-
-    // Check for pressed mouse actions.
-    switch (action) {
-    case ACTION_CAM_ORBIT:      mMouseMode = ORBIT;        return true;
-    case ACTION_CAM_PAN:        mMouseMode = PAN;          return true;
-    case ACTION_CAM_DOLLY:      mMouseMode = DOLLY;        return true;
-    case ACTION_CAM_ROLL:       mMouseMode = ROLL;         return true;
-    default: break;
+    case ACTION_CAM_FORWARD:        mInputState |= ORBIT_FORWARD;           return true;
+    case ACTION_CAM_BACKWARD:       mInputState |= ORBIT_BACKWARD;          return true;
+    case ACTION_CAM_LEFT:           mInputState |= ORBIT_LEFT;              return true;
+    case ACTION_CAM_RIGHT:          mInputState |= ORBIT_RIGHT;             return true;
+    case ACTION_CAM_UP:             mInputState |= ORBIT_UP;                return true;
+    case ACTION_CAM_DOWN:           mInputState |= ORBIT_DOWN;              return true;
+    case ACTION_CAM_SLOW_DOWN:      mInputState |= ORBIT_SLOW_DOWN;         return true;
+    case ACTION_CAM_SPEED_UP:       mInputState |= ORBIT_SPEED_UP;          return true;
+    case ACTION_CAM_RECENTER:       recenterCamera();                       return true;
+    case ACTION_CAM_RESET:          resetCamera();                          return true;
+    case ACTION_CAM_SET_UP_VECTOR:  mCamera->mUp = Vec3f(0.0f, 1.0f, 0.0f); return true;
+    case ACTION_CAM_PRINT_MATRICES: printCameraMatrices();                  return true;
+    case ACTION_CAM_ROTATE:         mMouseMode = ROTATE;                    return true;
+    case ACTION_CAM_TRACK:          mMouseMode = TRACK;                     return true;
+    case ACTION_CAM_DOLLY:          mMouseMode = DOLLY;                     return true;
+    case ACTION_CAM_ROLL:           mMouseMode = ROLL;                      return true;
     }
     return false;
 }
 
 bool
-OrbitCam::processMouseReleaseEvent(GLFWwindow* window, const Action action)
+OrbitCam::processKeyReleaseEvent(GLFWwindow* window, const Action action)
 {
     mMouseMode = NONE;
+
+    // Check for released keys.
+    switch (action) {
+    case ACTION_CAM_FORWARD:        mInputState &= ~ORBIT_FORWARD;    return true;
+    case ACTION_CAM_BACKWARD:       mInputState &= ~ORBIT_BACKWARD;   return true;
+    case ACTION_CAM_LEFT:           mInputState &= ~ORBIT_LEFT;       return true;
+    case ACTION_CAM_RIGHT:          mInputState &= ~ORBIT_RIGHT;      return true;
+    case ACTION_CAM_UP:             mInputState &= ~ORBIT_UP;         return true;
+    case ACTION_CAM_DOWN:           mInputState &= ~ORBIT_DOWN;       return true;
+    case ACTION_CAM_SLOW_DOWN:      mInputState &= ~ORBIT_SLOW_DOWN;  return true;
+    case ACTION_CAM_SPEED_UP:       mInputState &= ~ORBIT_SPEED_UP;   return true;
+    }
     return false;
 }
 
@@ -361,15 +331,13 @@ OrbitCam::processMouseMoveEvent(const double xpos, const double ypos)
     mMouseY = y;
 
     switch (mMouseMode) {
-    case ORBIT:         mCamera->rotateOrbit(dClickX, dClickY); break;
-    case PAN:           mCamera->move(dClickX, dClickY, 0.0f); break;
-    case DOLLY:         mCamera->dolly(dClickX + dClickY); break;
-    case ROLL:          mCamera->roll(dClickX); break;
-    case ROTATE_CAMERA: mCamera->rotate(dClickX, dClickY); break;
-    default: return false;
+    case ROTATE:        mCamera->rotateOrbit(dClickX, dClickY);     return true;
+    case TRACK:         mCamera->translate(dClickX, dClickY, 0.0f); return true;
+    case DOLLY:         mCamera->dolly(dClickX + dClickY);          return true;
+    case ROLL:          mCamera->roll(dClickX);                     return true;
     }
 
-    return true;
+    return false;
 }
 
 void
@@ -398,6 +366,18 @@ OrbitCam::recenterCamera()
     // reset mouse positions so repeatedly pressing F does not result in
     // repeated recentering.
     mMouseX = mMouseY = -1;
+}
+
+void
+OrbitCam::resetCamera()
+{
+    if (mInitialTransformSet) {
+        clearMovementState();
+        mCamera->mPosition = mInitialPosition;
+        mCamera->mViewDir = mInitialViewDir;
+        mCamera->mUp = mInitialUp;
+        mCamera->mFocusDistance = mInitialFocusDistance;
+    }
 }
 
 bool

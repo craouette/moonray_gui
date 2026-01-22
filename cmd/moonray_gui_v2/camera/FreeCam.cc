@@ -126,7 +126,7 @@ FreeCam::update(const float dt)
 
     // Update the camera angles by the rotation amounts (ignore dt for this
     // since it should be instant).
-    if (mMouseMode == MOVE) {
+    if (mMouseMode == ROTATE) {
 
         // rotate mouse movement by roll before updating yaw and pitch
         float c, s;
@@ -168,52 +168,24 @@ FreeCam::update(const float dt)
     return makeCameraMatrix(mYaw, mPitch, mRoll, mPosition);
 }
 
-void
+bool
 FreeCam::processKeyPressEvent(GLFWwindow* window, const Action action)
 {
     switch (action) {
-    case ACTION_CAM_FORWARD:        mInputState |= FREECAM_FORWARD;      break;
-    case ACTION_CAM_BACKWARD:       mInputState |= FREECAM_BACKWARD;     break;
-    case ACTION_CAM_LEFT:           mInputState |= FREECAM_LEFT;         break;
-    case ACTION_CAM_RIGHT:          mInputState |= FREECAM_RIGHT;        break;
-    case ACTION_CAM_UP:             mInputState |= FREECAM_UP;           break;
-    case ACTION_CAM_DOWN:           mInputState |= FREECAM_DOWN;         break;
-    case ACTION_CAM_SLOW_DOWN:      mInputState |= FREECAM_SLOW_DOWN;    break;
-    case ACTION_CAM_SPEED_UP:       mInputState |= FREECAM_SPEED_UP;     break;
-    case ACTION_CAM_PRINT_MATRICES: printCameraMatrices();               break;
-    case ACTION_CAM_SET_UP_VECTOR:  mRoll = 0.0f;                        break;
-    case ACTION_CAM_RESET:
-        if(mInitialTransformSet) {
-            clearMovementState();
-            resetTransform(mInitialTransform, false);
-        }
-        break;
-    default: break;
-    }
-}
-
-void
-FreeCam::processKeyReleaseEvent(GLFWwindow* window, const Action action)
-{
-    switch (action) {
-        case ACTION_CAM_FORWARD:        mInputState &= ~FREECAM_FORWARD;    break;
-        case ACTION_CAM_BACKWARD:       mInputState &= ~FREECAM_BACKWARD;   break;
-        case ACTION_CAM_LEFT:           mInputState &= ~FREECAM_LEFT;       break;
-        case ACTION_CAM_RIGHT:          mInputState &= ~FREECAM_RIGHT;      break;
-        case ACTION_CAM_UP:             mInputState &= ~FREECAM_UP;         break;
-        case ACTION_CAM_DOWN:           mInputState &= ~FREECAM_DOWN;       break;
-        case ACTION_CAM_SLOW_DOWN:      mInputState &= ~FREECAM_SLOW_DOWN;  break;
-        case ACTION_CAM_SPEED_UP:       mInputState &= ~FREECAM_SPEED_UP;   break;
-    }
-}
-
-bool
-FreeCam::processMousePressEvent(GLFWwindow* window, const Action action)
-{
-    switch (action) {
-    case ACTION_CAM_ORBIT: mMouseMode = MOVE; break;
-    case ACTION_CAM_ROLL:  mMouseMode = ROLL; break;
-    default:               mMouseMode = NONE; break;
+    case ACTION_CAM_FORWARD:        mInputState |= FREECAM_FORWARD;      return true;
+    case ACTION_CAM_BACKWARD:       mInputState |= FREECAM_BACKWARD;     return true;
+    case ACTION_CAM_LEFT:           mInputState |= FREECAM_LEFT;         return true;
+    case ACTION_CAM_RIGHT:          mInputState |= FREECAM_RIGHT;        return true;
+    case ACTION_CAM_UP:             mInputState |= FREECAM_UP;           return true;
+    case ACTION_CAM_DOWN:           mInputState |= FREECAM_DOWN;         return true;
+    case ACTION_CAM_SLOW_DOWN:      mInputState |= FREECAM_SLOW_DOWN;    return true;
+    case ACTION_CAM_SPEED_UP:       mInputState |= FREECAM_SPEED_UP;     return true;
+    case ACTION_CAM_PRINT_MATRICES: printCameraMatrices();               return true;
+    case ACTION_CAM_SET_UP_VECTOR:  mRoll = 0.0f;                        return true;
+    case ACTION_CAM_RESET:          resetCamera();                       return true;
+    case ACTION_CAM_ROTATE:         mMouseMode = ROTATE;                 break;
+    case ACTION_CAM_ROLL:           mMouseMode = ROLL;                   break;
+    default:                        mMouseMode = NONE;
     }
 
     if (mMouseMode != NONE) {
@@ -229,16 +201,27 @@ FreeCam::processMousePressEvent(GLFWwindow* window, const Action action)
 }
 
 bool
-FreeCam::processMouseReleaseEvent(GLFWwindow* window, const Action action)
+FreeCam::processKeyReleaseEvent(GLFWwindow* window, const Action action)
 {
     mMouseMode = NONE;
-    return true;
+
+    switch (action) {
+        case ACTION_CAM_FORWARD:        mInputState &= ~FREECAM_FORWARD;    return true;
+        case ACTION_CAM_BACKWARD:       mInputState &= ~FREECAM_BACKWARD;   return true;
+        case ACTION_CAM_LEFT:           mInputState &= ~FREECAM_LEFT;       return true;
+        case ACTION_CAM_RIGHT:          mInputState &= ~FREECAM_RIGHT;      return true;
+        case ACTION_CAM_UP:             mInputState &= ~FREECAM_UP;         return true;
+        case ACTION_CAM_DOWN:           mInputState &= ~FREECAM_DOWN;       return true;
+        case ACTION_CAM_SLOW_DOWN:      mInputState &= ~FREECAM_SLOW_DOWN;  return true;
+        case ACTION_CAM_SPEED_UP:       mInputState &= ~FREECAM_SPEED_UP;   return true;
+    }
+    return false;
 }
 
 bool
 FreeCam::processMouseMoveEvent(const double xpos, const double ypos)
 {
-   if (mMouseMode == MOVE || mMouseMode == ROLL) {
+   if (mMouseMode == ROTATE || mMouseMode == ROLL) {
        mMouseDeltaX += static_cast<int>(xpos - mMouseX);
        mMouseDeltaY += static_cast<int>(ypos - mMouseY);
        mMouseX = static_cast<int>(xpos);
@@ -256,6 +239,15 @@ FreeCam::clearMovementState()
     mMouseMode = NONE;
     mMouseX = 0;
     mMouseY = 0;
+}
+
+void
+FreeCam::resetCamera()
+{
+    if (mInitialTransformSet) {
+        clearMovementState();
+        resetTransform(mInitialTransform, false);
+    }
 }
 
 void

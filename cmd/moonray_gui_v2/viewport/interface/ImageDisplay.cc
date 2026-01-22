@@ -14,11 +14,25 @@ constexpr float MAX_ZOOM = 30.0f;   // max zoom in (30x)
 constexpr float MIN_ZOOM = 0.1f;    // max zoom out (0.1x)
 constexpr float ZOOM_STEP = 1.05f;  // zoom step factor
 
-ImVec2 
-ImageDisplay::getCenteredPosition(const int availWidth, const int availHeight) const
+void
+ImageDisplay::configureWindow(const int availWidth, const int availHeight)
 {
+    // --------------- Set position/size ----------------
+    // Get the scaled image size to account for zoom in/out
     ImVec2 scaledSize = getScaledSize();
-    return ImVec2((availWidth - scaledSize.x) * 0.5f, (availHeight - scaledSize.y) * 0.5f);
+    ImGui::SetNextWindowSize(scaledSize);
+
+    // Center image in the viewport
+    mPosition = ImVec2((availWidth - scaledSize.x) * 0.5f, (availHeight - scaledSize.y) * 0.5f);
+
+    // Apply any panning offset
+    mPosition.x += mPositionOffset.x;
+    mPosition.y += mPositionOffset.y;
+    ImGui::SetNextWindowPos(mPosition);
+    // -------------------------------------------------
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
 }
 
 void
@@ -31,22 +45,8 @@ ImageDisplay::draw(const Viewport* viewport, const int availWidth, const int ava
         return;
     }
 
-    // --------------- Set position/size ----------------
-    // Get the scaled image size to account for zoom in/out
-    ImGui::SetNextWindowSize(getScaledSize());
-
-    // Center image in the viewport
-    mPosition = getCenteredPosition(availWidth, availHeight);
-
-    // Apply any panning offset
-    mPosition.x += mPositionOffset.x;
-    mPosition.y += mPositionOffset.y;
-    ImGui::SetNextWindowPos(mPosition);
-    // -------------------------------------------------
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-
+    configureWindow(availWidth, availHeight);
+    
     // This window will just contain the image, no decorations or inputs
     if (ImGui::Begin("ImageViewport", nullptr, 
                     ImGuiWindowFlags_NoDecoration | 

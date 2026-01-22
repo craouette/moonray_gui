@@ -18,8 +18,8 @@ public:
     int getHeight() const override { return mHeight; }
 
 private:
-    // Get the position of the window, centered in the viewport
-    ImVec2 getCenteredPosition() const;
+    // Define the window settings (size, position, style, etc)
+    void configureWindow() const;
 
     int mWidth {100};       // Width of the window
     int mHeight {77};       // Height of the window

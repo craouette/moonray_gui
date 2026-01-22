@@ -3,11 +3,9 @@
 
 #include "GuiTypes.h"
 
-#include <GLFW/glfw3.h>
-
 namespace moonray_gui_v2 {
 
-std::string getActionName(const Action& action) {
+std::string getActionName(const Action action) {
     switch (action) {
     case ACTION_CAM_FORWARD:                    return "Camera Forward";
     case ACTION_CAM_BACKWARD:                   return "Camera Backward";
@@ -21,9 +19,9 @@ std::string getActionName(const Action& action) {
     case ACTION_CAM_RECENTER:                   return "Camera Recenter";
     case ACTION_CAM_PRINT_MATRICES:             return "Camera Print Matrices";
     case ACTION_CAM_SET_UP_VECTOR:              return "Camera Set Up Vector";
-    case ACTION_CAM_ORBIT:                      return "Camera Orbit";
+    case ACTION_CAM_ROTATE:                     return "Camera Rotation";
     case ACTION_CAM_DOLLY:                      return "Camera Dolly";
-    case ACTION_CAM_PAN:                        return "Camera Pan";
+    case ACTION_CAM_TRACK:                      return "Camera Track";
     case ACTION_CAM_ROLL:                       return "Camera Roll";
     case ACTION_IMAGE2D_PAN:                    return "Image 2D Pan";
     case ACTION_IMAGE2D_ZOOM:                   return "Image 2D Zoom";
@@ -47,12 +45,12 @@ std::string getActionName(const Action& action) {
     case ACTION_EXPOSURE_RESET:                 return "Exposure Reset";
     case ACTION_GAMMA_ADJUST:                   return "Gamma Adjust";
     case ACTION_GAMMA_RESET:                    return "Gamma Reset";
-    case ACTION_OCIO_TOGGLE:                    return "OCIO Toggle";
     case ACTION_FAST_PROGRESSIVE_TOGGLE:        return "Fast Progressive Toggle";
     case ACTION_FAST_PROGRESSIVE_NEXT_MODE:     return "Fast Progressive Next Mode";
     case ACTION_FAST_PROGRESSIVE_PREV_MODE:     return "Fast Progressive Previous Mode";
     case ACTION_WINDOW_TOGGLE_EXPOSURE:         return "Window Toggle Exposure";
     case ACTION_WINDOW_TOGGLE_GAMMA:            return "Window Toggle Gamma";
+    case ACTION_WINDOW_TOGGLE_KEY_BINDINGS:     return "Window Toggle Key Bindings";
     case ACTION_WINDOW_TOGGLE_SCENE_INSPECTOR:  return "Window Toggle Scene Inspector";
     case ACTION_WINDOW_TOGGLE_PATH_VISUALIZER:  return "Window Toggle Path Visualizer";
     case ACTION_WINDOW_TOGGLE_PIXEL_INSPECTOR:  return "Window Toggle Pixel Inspector";
@@ -64,7 +62,7 @@ std::string getActionName(const Action& action) {
     case ACTION_TILE_PROGRESS_TOGGLE:           return "Tile Progress Toggle";
     case ACTION_RENDER_OUTPUT_PREV:             return "Render Output Previous";
     case ACTION_RENDER_OUTPUT_NEXT:             return "Render Output Next";
-    case ACTION_PRINT_KEYBINDINGS:              return "Print Key Bindings";
+    case ACTION_PRINT_KEY_BINDINGS:             return "Print Key Bindings";
     default:                                    return "";
     }
 }
@@ -140,6 +138,10 @@ std::string getKeyName(const int& glfwKey)
 
 std::string getModifierName(const int& mod)
 {
+    if (mod == 0) {
+        return "";
+    }
+
     // First, check to see if any secondary keys are acting as modifiers
     std::string keyName = getKeyName(mod);
     /// NOTE: currently, mouse buttons cannot act as modifiers

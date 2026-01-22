@@ -30,6 +30,8 @@ public:
     int getHeight() const override { return mHeight; }
 
 private:
+    void configureWindow(const ImVec2& dockOffset) const;
+
     // Get a display-able string representing the current debug mode
     std::string getDebugModeStr(const DebugMode& mode) const;
 

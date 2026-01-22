@@ -38,12 +38,9 @@ public:
     // Returns the latest camera matrix.
     virtual scene_rdl2::math::Mat4f update(const float dt) = 0;
 
-    virtual void        processKeyPressEvent(GLFWwindow* window, const Action action) {}
-    virtual void        processKeyReleaseEvent(GLFWwindow* window, const Action action) {}
-
     /// Returns true if the input was used, false if ignored.
-    virtual bool        processMousePressEvent(GLFWwindow* window, const Action action) { return false; }
-    virtual bool        processMouseReleaseEvent(GLFWwindow* window, const Action action) { return false; }
+    virtual bool        processKeyPressEvent(GLFWwindow* window, const Action action) { return false; }
+    virtual bool        processKeyReleaseEvent(GLFWwindow* window, const Action action) { return false; }
     virtual bool        processMouseMoveEvent(const double xpos, const double ypos) { return false; }
 
     virtual void        clearMovementState() {};

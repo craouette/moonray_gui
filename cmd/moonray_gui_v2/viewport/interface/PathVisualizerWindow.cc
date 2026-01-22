@@ -161,46 +161,51 @@ PathVisualizerWindow::drawStyleMenu()
 }
 
 void
+PathVisualizerWindow::configureWindow(const ImVec2& dockOffset) const
+{
+    // Establish size and position
+    ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(ImVec2(imguiViewport->Size.x - mWidth - dockOffset.x, 0));
+    ImGui::SetNextWindowSize(ImVec2(mWidth, imguiViewport->Size.y));
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(mWindowPadding, mWindowPadding));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, mItemSpacing));
+}
+
+void
 PathVisualizerWindow::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset)
 {
-    if (mOpen) {
-        // If path visualizer manager doesn't exist, we can't
-        // perform any of the actions in the UI. Try
-        // to retrieve it from the viewport.
-        if (!mManager) {
-            mManager = viewport->getPathVisualizerManager();
-            if (!mManager) { return; }
-        }
+    if (!mOpen) { return; }
 
-        // Establish size and position
-        ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(ImVec2(imguiViewport->Size.x - mWidth - dockOffset.x, 0));
-        ImGui::SetNextWindowSize(ImVec2(mWidth, imguiViewport->Size.y));
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(mWindowPadding, mWindowPadding));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, mItemSpacing));
-
-        // Create window
-        ImGui::Begin("Path Visualizer", &mOpen, ImGuiWindowFlags_NoMove | 
-                                                ImGuiWindowFlags_NoResize |
-                                                ImGuiWindowFlags_NoCollapse);
-
-        // Create "on/off" button
-        drawEnableButton();
-        // Create pixel selector
-        drawPixelSelector();
-        // Create sampling settings menu
-        drawSamplingSettingsMenu();
-        // Create max depth menu
-        drawMaxDepthMenu();
-        // Create visibility toggles menu
-        drawVisibilityTogglesMenu();
-        // Create style options menu
-        drawStyleMenu();
-
-        ImGui::End();
-        ImGui::PopStyleVar(2);
+    // If path visualizer manager doesn't exist, we can't
+    // perform any of the actions in the UI. Try
+    // to retrieve it from the viewport.
+    if (!mManager) {
+        mManager = viewport->getPathVisualizerManager();
+        if (!mManager) { return; }
     }
+
+    configureWindow(dockOffset);
+
+    // Create window
+    ImGui::Begin("Path Visualizer", &mOpen, ImGuiWindowFlags_NoMove | 
+                                            ImGuiWindowFlags_NoResize |
+                                            ImGuiWindowFlags_NoCollapse);
+    // Create "on/off" button
+    drawEnableButton();
+    // Create pixel selector
+    drawPixelSelector();
+    // Create sampling settings menu
+    drawSamplingSettingsMenu();
+    // Create max depth menu
+    drawMaxDepthMenu();
+    // Create visibility toggles menu
+    drawVisibilityTogglesMenu();
+    // Create style options menu
+    drawStyleMenu();
+
+    ImGui::End();
+    ImGui::PopStyleVar(2);
 }
 
 } // namespace moonray_gui_v2

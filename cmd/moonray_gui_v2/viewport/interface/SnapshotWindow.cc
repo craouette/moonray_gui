@@ -50,6 +50,17 @@ SnapshotWindow::handleSnapshotClick(const int chosenSnapshotIdx, const int click
 }
 
 void
+SnapshotWindow::configureWindow(const ImVec2& dockOffset) const
+{
+    ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
+    // Position at bottom of viewport, above any other horizontally docked components
+    ImVec2 pos = ImVec2(0, imguiViewport->Size.y - dockOffset.y - mHeight);
+    ImVec2 size = ImVec2(imguiViewport->Size.x, mHeight);
+    ImGui::SetNextWindowPos(pos);
+    ImGui::SetNextWindowSize(size);
+}
+
+void
 SnapshotWindow::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec2& dockOffset)
 {
     // There must be a valid snapshot manager to draw the window
@@ -62,14 +73,7 @@ SnapshotWindow::draw(Viewport* viewport, const ImVec2& currentPixel, const ImVec
 
     if (!mOpen) { return; }
 
-    // ------------------- Set position & size ---------------------------- //
-    ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
-    // Position at bottom of viewport, above any other horizontally docked components
-    ImVec2 pos = ImVec2(0, imguiViewport->Size.y - dockOffset.y - mHeight);
-    ImVec2 size = ImVec2(imguiViewport->Size.x, mHeight);
-    ImGui::SetNextWindowPos(pos);
-    ImGui::SetNextWindowSize(size);
-    // -------------------------------------------------------------------- //
+    configureWindow(dockOffset);
 
     float aspectRatio = static_cast<float>(viewport->getFramebufferWidth()) / 
                         static_cast<float>(viewport->getFramebufferHeight());

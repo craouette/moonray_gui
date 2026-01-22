@@ -34,6 +34,9 @@ class PathVisualizerWindow : public Component {
         int getHeight() const override { return -1; } // auto-size height
 
     private:
+        // Define the window settings (size, position, style, etc)
+        void configureWindow(const ImVec2& dockOffset) const;
+
         // Draw enable/disable button
         void drawEnableButton();
 

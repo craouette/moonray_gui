@@ -21,12 +21,9 @@ public:
 
     scene_rdl2::math::Mat4f  update(const float dt) override;
 
-    void                processKeyPressEvent(GLFWwindow* window, const Action action) override;
-    void                processKeyReleaseEvent(GLFWwindow* window, const Action action) override;
-
     /// Returns true if the input was used, false if ignored.
-    bool                processMousePressEvent(GLFWwindow* window, const Action action) override;
-    bool                processMouseReleaseEvent(GLFWwindow* window, const Action action) override;
+    bool                processKeyPressEvent(GLFWwindow* window, const Action action) override;
+    bool                processKeyReleaseEvent(GLFWwindow* window, const Action action) override;
     bool                processMouseMoveEvent(const double xpos, const double ypos) override;
     void                clearMovementState() override;
 
@@ -34,17 +31,20 @@ private:
     enum MouseMode
     {
         NONE,
-        ORBIT,
-        PAN,
+        ROTATE,
+        TRACK,
         DOLLY,
         ROLL,
-        ROTATE_CAMERA,
     };
 
     // Run a center-pixel "pick" operation to compute camera focus
     void                pickFocusPoint();
 
+    // Recenter the camera on the chosen focus point
     void                recenterCamera();
+    // Reset the camera to its initial state
+    void                resetCamera();
+
     bool                pick(const int x, const int y, scene_rdl2::math::Vec3f* hitPoint) const;
     scene_rdl2::math::Mat4f  makeCameraMatrix(const Camera& camera) const;
     void                printCameraMatrices() const;
@@ -54,7 +54,7 @@ private:
 
     float                    mSpeed {50.0f};
     uint32_t                 mInputState {0};        /// bitfield representing current movement state
-    MouseMode                mMouseMode {NONE};      /// current mouse interaction mode (ORBIT, PAN, DOLLY, ROLL, NONE)
+    MouseMode                mMouseMode {NONE};      /// current mouse interaction mode (ROTATE, TRACK, DOLLY, ROLL, NONE)
     int                      mMouseX {-1};           /// last mouse x position
     int                      mMouseY {-1};           /// last mouse y position
 
