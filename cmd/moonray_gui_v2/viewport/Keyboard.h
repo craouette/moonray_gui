@@ -46,7 +46,7 @@ public:
     // Gets the action for a given key/mod combination, checking for any additional,
     // currently-pressed keys that may act as special modifiers.
     // Returns ACTION_NONE if no action is bound to the combination.
-    Action getActionFromInput(const GLFWwindow* window, const KeyModPair& keyModPair) const;
+    Action getActionFromInput(GLFWwindow* window, const KeyModPair& keyModPair);
 
     // Gets the action for the given key/mod combination without checking for
     // any extra special modifiers. Returns ACTION_NONE if no action is bound.
@@ -142,7 +142,7 @@ public:
     // which is composed of the given key/mod combination, plus any
     // additional pressed keys acting as special modifiers, which we check for internally.
     // Returns ACTION_NONE if no action is bound to the combination.
-    Action getActionFromInput(const GLFWwindow* glfwWindow, int glfwKey, int glfwMod) const;
+    Action getActionFromInput(GLFWwindow* glfwWindow, int glfwKey, int glfwMod);
 
     // Gets the action for scroll input
     Action getScrollAction() const;

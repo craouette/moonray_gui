@@ -141,8 +141,8 @@ class KeyBindingsWindow : public Component {
 
         // Get the width and height of the window
         // -1 indicates dynamic height based on viewport size
-        int getWidth() const { return mWidth; }
-        int getHeight() const { return -1; }
+        int getWidth() const override { return mWidth; }
+        int getHeight() const override { return -1; }
 
         // Whether we are currently capturing a key binding
         bool isCapturing() const { return mKeyCapture.isCapturing(); }
@@ -170,16 +170,16 @@ class KeyBindingsWindow : public Component {
         std::string formatKeyBinding(int key, int mod) const;
 
         // Process ImGui key inputs when capturing
-        void processKeyCapture(const Viewport* viewport);
+        void processKeyCapture(Viewport* viewport);
 
         // Apply the pending key binding
-        void applyKeyBinding(const Viewport* viewport, bool forceOverride);
+        void applyKeyBinding(Viewport* viewport, bool forceOverride);
 
         // Clears the pending key binding state
         void clearPendingBinding();
 
         // Resets the key binding for the given action to its default value
-        void resetBindingToDefault(const Keyboard* keyboard, const Action action, bool forceOverride);
+        void resetBindingToDefault(Keyboard* keyboard, const Action action, bool forceOverride);
 
         // Draw the header text for the key bindings window
         void drawHeaderText() const;
@@ -192,13 +192,13 @@ class KeyBindingsWindow : public Component {
 
         // Draw button that displays the current key and 
         // allows for the user to change the key binding
-        void drawKeyBindingButton(const Keyboard* keyboard, const Action action);
+        void drawKeyBindingButton(Keyboard* keyboard, const Action action);
 
         // Draw the table displaying actions and their key bindings
-        void drawKeyBindingTable(std::string header, const std::set<Action>& actions, const Keyboard* keyboard);
+        void drawKeyBindingTable(std::string header, const std::set<Action>& actions, Keyboard* keyboard);
 
         // Draw the modal popup for key binding conflicts
-        void drawConflictModal(const Viewport* viewport);
+        void drawConflictModal(Viewport* viewport);
 
         bool mInitialized {false};      // Whether the window has been initialized
         int mWidth {450};               // Width of the window

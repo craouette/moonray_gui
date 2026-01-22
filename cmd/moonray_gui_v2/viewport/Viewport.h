@@ -108,6 +108,7 @@ public:
 
     // Gets pointer to keyboard state
     const Keyboard* getKeyboard() const { return mKeyboard.get(); }
+    Keyboard* getKeyboard() { return mKeyboard.get(); }
 
     // Gets the current render output index
     int getRenderOutputIndex() const { return mRenderOutputIndex; }

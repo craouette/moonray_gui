@@ -59,12 +59,12 @@ public:
     }
 
     // Get value by key
-    V getValue(const K& key) {
+    V getValue(const K& key) const {
         return keyMap.at(key);
     }
 
     // Get key by value
-    K getKey(const V& val) {
+    K getKey(const V& val) const {
         return valMap.at(val);
     }
 

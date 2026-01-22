@@ -264,7 +264,7 @@ KeyBindingsWindow::initialize(const Keyboard* keyboard)
 }
 
 void
-KeyBindingsWindow::processKeyCapture(const Viewport* viewport)
+KeyBindingsWindow::processKeyCapture(Viewport* viewport)
 {
     // Update the capture state - this must be called every frame
     mKeyCapture.update();
@@ -281,7 +281,7 @@ KeyBindingsWindow::processKeyCapture(const Viewport* viewport)
 }
 
 void
-KeyBindingsWindow::applyKeyBinding(const Viewport* viewport, bool forceOverride)
+KeyBindingsWindow::applyKeyBinding(Viewport* viewport, bool forceOverride)
 {
     Keyboard* keyboard = viewport->getKeyboard();
 
@@ -318,7 +318,7 @@ KeyBindingsWindow::clearPendingBinding()
 }
 
 void
-KeyBindingsWindow::resetBindingToDefault(const Keyboard* keyboard, const Action action, bool forceOverride)
+KeyBindingsWindow::resetBindingToDefault(Keyboard* keyboard, const Action action, bool forceOverride)
 {
     KeyModPair defaultKeyModPair;
     if (keyboard->resetBindingToDefault(action, mConflictingAction, defaultKeyModPair, forceOverride)) {
@@ -401,7 +401,7 @@ KeyBindingsWindow::drawKeyboardModeDropdown(Keyboard* keyboard)
 }
 
 void
-KeyBindingsWindow::drawKeyBindingButton(const Keyboard* keyboard, const Action action)
+KeyBindingsWindow::drawKeyBindingButton(Keyboard* keyboard, const Action action)
 {
     // Make the key binding display clickable
     ImGui::PushID(action);
@@ -451,7 +451,7 @@ KeyBindingsWindow::drawKeyBindingButton(const Keyboard* keyboard, const Action a
 }
 
 void
-KeyBindingsWindow::drawKeyBindingTable(std::string header, const std::set<Action>& actions, const Keyboard* keyboard)
+KeyBindingsWindow::drawKeyBindingTable(std::string header, const std::set<Action>& actions, Keyboard* keyboard)
 {
     ImGui::Spacing();
     ImGui::Spacing();
@@ -485,7 +485,7 @@ KeyBindingsWindow::drawKeyBindingTable(std::string header, const std::set<Action
 }
 
 void
-KeyBindingsWindow::drawConflictModal(const Viewport* viewport) {
+KeyBindingsWindow::drawConflictModal(Viewport* viewport) {
     if (mShowOverrideConfirm) {
         ImGui::OpenPopup("Key Binding Conflict##Override_Confirm");
         mShowOverrideConfirm = false;
@@ -544,7 +544,7 @@ KeyBindingsWindow::draw(Viewport* viewport, const ImVec2& currentPixel, const Im
 {
     if (!viewport || !viewport->getKeyboard()) { return; }
 
-    Keyboard* keyboard = const_cast<Keyboard*>(viewport->getKeyboard());
+    Keyboard* keyboard = viewport->getKeyboard();
     if (!mInitialized) {
         initialize(keyboard);
     }

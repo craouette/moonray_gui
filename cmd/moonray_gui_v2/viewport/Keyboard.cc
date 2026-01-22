@@ -95,7 +95,7 @@ KeyboardBindings::getKeyModPair(const Action action) const
 }
 
 Action
-KeyboardBindings::getActionFromInput(const GLFWwindow* window, const KeyModPair& keyModPair) const
+KeyboardBindings::getActionFromInput(GLFWwindow* window, const KeyModPair& keyModPair)
 {
     // First, check for any currently pressed glfw keys acting as modifiers
     if (window) {
@@ -289,7 +289,7 @@ Keyboard::getKeyModPair(const Action action) const
 }
 
 Action 
-Keyboard::getActionFromInput(const GLFWwindow* glfwWindow, const int glfwKey, const int glfwMod) const
+Keyboard::getActionFromInput(GLFWwindow* glfwWindow, const int glfwKey, const int glfwMod)
 {
     return mBindings->getActionFromInput(glfwWindow, KeyModPair(glfwKey, glfwMod));
 }
